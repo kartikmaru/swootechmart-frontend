@@ -5,6 +5,8 @@ import Link from "next/link";
 import React from "react";
 import EditBtn from "@/components/admin/EditBtn";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ColorTable() {
 
     const res = await getColors()

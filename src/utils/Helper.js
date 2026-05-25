@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const client = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-  timeout: 1000,
+  timeout: 30000,
   headers: { "X-Custom-Header": "foobar" },
   withCredentials: true
 });

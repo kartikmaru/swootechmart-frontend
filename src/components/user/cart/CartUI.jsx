@@ -16,13 +16,13 @@ export default function CartUI() {
       <div className="flex-1 space-y-6">
 
         {
-          cart.items.map((item, index) => (
+          cart?.items?.map((item, index) => (
             <div key={index} className="flex gap-6 bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
 
               {/* Image Section */}
               <div className="w-32 h-32 bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden">
                 <img
-                  src={item.thumbnail}
+                  src={item?.thumbnail}
                   alt="Product"
                   className="w-full h-full object-contain p-3"
                 />
@@ -34,11 +34,11 @@ export default function CartUI() {
                 {/* Top */}
                 <div>
                   <h2 className="font-semibold text-lg text-gray-800 line-clamp-1">
-                    {item.name}
+                    {item?.name}
                   </h2>
 
                   <p className="text-[#01A49E] font-bold text-xl mt-1">
-                    ₹{item.final_price}
+                    ₹{item?.final_price}
                   </p>
                 </div>
 
@@ -49,18 +49,18 @@ export default function CartUI() {
                   <div className="flex items-center border rounded-lg overflow-hidden">
 
                     <button
-                      onClick={() => dispatch(qtyChange({ id: item.id, flag: "dec" }))}
+                      onClick={() => dispatch(qtyChange({ id: item?.id, flag: "dec" }))}
                       className="w-9 h-9 flex items-center justify-center text-red-500 hover:bg-red-50 transition text-lg"
                     >
                       −
                     </button>
 
                     <span className="w-10 text-center text-sm font-medium bg-gray-50">
-                      {item.qty}
+                      {item?.qty}
                     </span>
 
                     <button
-                      onClick={() => dispatch(qtyChange({ id: item.id, flag: "inc" }))}
+                      onClick={() => dispatch(qtyChange({ id: item?.id, flag: "inc" }))}
                       className="w-9 h-9 flex items-center justify-center bg-black text-white hover:bg-gray-800 transition text-lg"
                     >
                       +
@@ -70,7 +70,7 @@ export default function CartUI() {
                   {/* Stock Status */}
                   <div>
                     {
-                      item.stock ? (
+                      item?.stock ? (
                         <span className="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-full font-medium">
                           ✔ In Stock
                         </span>

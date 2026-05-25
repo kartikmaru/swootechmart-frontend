@@ -1,6 +1,8 @@
 import { getProducts } from "@/API/helpAPI";
 import ProductCard from "@/components/user/Store/ProductCard";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Page({ params, searchParams }) {
     const category_promise = await params;
     const category_slug = category_promise.slug || null

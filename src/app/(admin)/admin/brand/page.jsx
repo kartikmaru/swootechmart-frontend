@@ -4,6 +4,8 @@ import EditBtn from "@/components/admin/EditBtn";
 import Link from "next/link";
 import React from "react";
 
+export const dynamic = 'force-dynamic';
+
 export default async function BrandTable() {
 
   const res = await getBrands()

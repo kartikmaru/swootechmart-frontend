@@ -10,6 +10,8 @@ import ProductCard from '@/components/user/Store/ProductCard'
 import { ShopHero } from '@/components/user/Store/ShopHero'
 import React from 'react'
 
+export const dynamic = 'force-dynamic';
+
 export default async function page({ searchParams }) {
 
     const search_params = await searchParams

@@ -6,6 +6,8 @@ import Link from "next/link";
 import React from "react";
 import { FaImages, FaRegEye } from "react-icons/fa";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProductTable() {
 
     const res = await getProducts()

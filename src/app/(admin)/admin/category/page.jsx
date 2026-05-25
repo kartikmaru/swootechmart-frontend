@@ -5,6 +5,8 @@ import Btns from "@/components/admin/Btns";
 import DeleteBtn from "@/components/admin/DeleteBtn";
 import EditBtn from "@/components/admin/EditBtn";
 
+export const dynamic = 'force-dynamic';
+
 export default async function CategoryTable() {
     const res = await getCategories()
     const data = res.data

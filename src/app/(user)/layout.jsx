@@ -2,9 +2,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
 import Header from "@/components/user/Header";
 import Footer from "@/components/user/Footer";
-import ReduxProvide from "@/redux/ReduxProvider";
 import ReduxProvider from "@/redux/ReduxProvider";
 import { getMe } from "@/API/serverAPI";
+
+export const dynamic = 'force-dynamic';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
