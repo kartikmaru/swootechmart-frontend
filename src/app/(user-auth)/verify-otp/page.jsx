@@ -31,7 +31,7 @@ export default function VerifyOtpPage() {
     setLoading(true)
     const finalOtp = otp.join("")
     setLoading(true)
-    client.post("/user/verify-otp", { otp: finalOtp, email: email }).then(
+    client.post("user/verify-otp", { otp: finalOtp, email: email }).then(
       (res) => {
         if (res.data.success) {
           e.target.reset()
