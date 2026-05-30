@@ -30,7 +30,7 @@ function VerifyOtpContent() {
     const finalOtp = otp.join("")
     setLoading(true)
 
-    client.post("user/verify-otp", {
+    client.post("User/verify-otp", {
       otp: finalOtp,
       email: email
     })

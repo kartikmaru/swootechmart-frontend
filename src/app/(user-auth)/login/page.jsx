@@ -32,7 +32,7 @@ export default function LoginPage() {
       password: e.target.password.value
     }
 
-    await client.post("/user/login", data).then(
+    await client.post("/User/login", data).then(
       async (res) => {
         setLoading(true)
         notify("User Loged In Successfully", true)

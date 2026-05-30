@@ -21,7 +21,7 @@ export default function RegisterPage() {
             password: e.target.password.value
         }
 
-        client.post("/user/create", data).then(
+        client.post("/User/create", data).then(
             (res) => {
                 notify("User Created successfully", true)
                 if (res.data.success) {

@@ -10,7 +10,7 @@ async function getMe() {
         if (!token) {
             return { user: null };
         }
-        const response = await client.get("user/get", {
+        const response = await client.get("User/get", {
             headers: {
                 Authorization: token
             }

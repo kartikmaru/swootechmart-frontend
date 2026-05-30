@@ -26,7 +26,7 @@ export default function Profile({ user }) {
         try {
 
             await client.put(
-                'user/deleteaddress',
+                'User/deleteaddress',
                 { index }
             )
 
@@ -47,7 +47,7 @@ export default function Profile({ user }) {
         try {
 
             const res = await client.post(
-                'user/addaddresses',
+                'User/addaddresses',
                 form
             );
 
