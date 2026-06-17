@@ -1,52 +1,53 @@
-"use client";
+import { getCategories } from "@/API/helpAPI";
+import Link from "next/link";
 
-import { FaLaptop, FaDesktop, FaHeadphones, FaTv } from "react-icons/fa";
+export async function TopCategories() {
 
-const categories = [
-    { name: "Laptops", icon: <FaLaptop size={28} /> },
-    { name: "PC Gaming", icon: <FaDesktop size={28} /> },
-    { name: "Headphones", icon: <FaHeadphones size={28} /> },
-    { name: "Monitors", icon: <FaTv size={28} /> },
-];
+    const res  = await getCategories({ limit: 8, is_top: true, status: true })
+    const cats = res.data
+    const meta = res.meta   // ImageBaseUrl
 
-export function TopCategories() {
     return (
-        <div className="bg-gray-100 rounded-2xl p-6 w-full">
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 w-full shadow-sm">
 
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        TOP CATEGORIES
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                    <h2 className="text-sm font-black text-gray-800 uppercase tracking-wide">
+                        Top Categories
                     </h2>
-                    <button className="text-sm text-gray-500 hover:text-black">
-                        View All
-                    </button>
+                    <p className="text-xs text-gray-400 mt-0.5">Browse by category</p>
                 </div>
-
-                {/* Right small dots */}
-                <div className="flex gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-300"></span>
-                </div>
+                <Link href="/store" className="text-xs text-[#01A49E] font-semibold hover:underline">
+                    View All →
+                </Link>
             </div>
 
-            {/* Categories */}
-            <div className="grid grid-cols-4 text-center gap-6">
-                {categories.map((cat, index) => (
-                    <div
-                        key={index}
-                        className="flex flex-col items-center gap-3 hover:scale-105 transition cursor-pointer"
+            {/* Categories Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {cats.map((cat) => (
+                    <Link
+                        key={cat._id}
+                        href={`/store/${cat.slug}`}
+                        className="group flex flex-col items-center gap-2 bg-gray-50 hover:bg-teal-50 border border-gray-100 hover:border-[#01A49E]/40 rounded-xl p-3 transition-all duration-200 text-center"
                     >
-                        <div className="text-gray-700">
-                            {cat.icon}
+                        {/* Image */}
+                        <div className="w-12 h-12 flex items-center justify-center bg-white rounded-xl border border-gray-200 group-hover:border-[#01A49E]/30 shadow-sm overflow-hidden transition">
+                            <img
+                                src={`${meta.ImageBaseUrl}${cat.image}`}
+                                alt={cat.name}
+                                className="w-9 h-9 object-contain group-hover:scale-110 transition-transform duration-200"
+                            />
                         </div>
-                        <span className="text-sm text-gray-700 font-medium">
+
+                        {/* Name */}
+                        <span className="text-[11px] font-bold text-gray-600 group-hover:text-[#01A49E] leading-tight transition line-clamp-2">
                             {cat.name}
                         </span>
-                    </div>
+                    </Link>
                 ))}
             </div>
+
         </div>
-    );
+    )
 }

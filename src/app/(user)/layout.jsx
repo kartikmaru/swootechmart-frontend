@@ -35,7 +35,11 @@ export default async function RootLayout({ children }) {
       <body className="min-h-full flex flex-col">
         <ReduxProvider>
           <Header user={user} />
-          {children}
+          <main className="flex-1 w-full">
+            <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+              {children}
+            </div>
+          </main>
           <Footer />
         </ReduxProvider>
       </body>

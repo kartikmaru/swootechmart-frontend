@@ -1,6 +1,5 @@
-import { getCategories } from '@/API/helpAPI';
-import Image from 'next/image';
-import Link from 'next/link';
+import { getCategories } from '@/API/helpAPI'
+import Link from 'next/link'
 
 export default async function PopularCategories() {
 
@@ -8,36 +7,37 @@ export default async function PopularCategories() {
     const { data, meta } = categoriesRes
 
     return (
-        <section className="bg-white p-8 font-sans">
-            <div className=" mx-auto">
-                <h2 className="text-xl font-bold uppercase mb-8 text-black tracking-tight">
-                    Popular Categories
-                </h2>
+        <section>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-black uppercase text-gray-800 tracking-wide">Popular Categories</h2>
+                <Link href="/store" className="text-xs text-[#01A49E] font-semibold hover:underline">View All</Link>
+            </div>
 
-                {/* Responsive Grid: 1 col on mobile, 2 on tablet, 5 on desktop */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-12 gap-x-12">
-                    {data.map((category, index) => (
-                        <Link
-                            href={`/category/${category.name.toLowerCase().replace(/\s+/g, '-')}`}
-                            key={index}
-                            className="group flex items-center justify-between hover:opacity-80 transition-opacity"
-                        >
-                            <div className="flex  flex-col">
-                                <span className="font-bold text-gray-900 text-sm md:text-base">
-                                    {category.name}
-                                </span>
-                                <span className="text-gray-500 text-xs md:text-sm">
-                                    {category.count} Items
-                                </span>
-                            </div>
-
-                            <div className="relative w-10 h-10 flex-shrink-0">
-                                <img src={`${meta.ImageBaseUrl}${category.image}`} alt={category.name} className="object-contain" />
-                            </div>
-                        </Link>
-                    ))}
-                </div>
+            <div className="flex gap-2 flex-wrap">
+                {data.map((category, index) => (
+                    <Link
+                        href={`/store/${category.slug}`}
+                        key={index}
+                        className="flex items-center gap-2.5 bg-white border border-gray-200 hover:border-[#01A49E] hover:bg-teal-50 px-3.5 py-2.5 rounded-2xl transition-all duration-200 group"
+                    >
+                        <div className="w-8 h-8 rounded-xl bg-gray-50 group-hover:bg-white flex items-center justify-center overflow-hidden shrink-0 border border-gray-100">
+                            <img
+                                src={`${meta.ImageBaseUrl}${category.image}`}
+                                alt={category.name}
+                                className="w-6 h-6 object-contain"
+                            />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-gray-800 group-hover:text-[#01A49E] transition leading-none">
+                                {category.name}
+                            </p>
+                            {category.count !== undefined && (
+                                <p className="text-[10px] text-gray-400 mt-0.5">{category.count} items</p>
+                            )}
+                        </div>
+                    </Link>
+                ))}
             </div>
         </section>
-    );
+    )
 }

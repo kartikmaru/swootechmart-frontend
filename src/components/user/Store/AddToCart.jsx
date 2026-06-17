@@ -1,133 +1,60 @@
 'use client'
 
-import { addtocart, qtyChange } from '@/redux/features/CartSlice'
-import { client, notify } from '@/utils/Helper'
-import React from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { qtyChange } from '@/redux/features/CartSlice'
+import { notify } from '@/utils/Helper'
+import { addToCartWithSync, changeQtyWithSync } from '@/utils/cartHelper'
+import { FiShoppingCart, FiPlus, FiMinus } from 'react-icons/fi'
 
 export default function AddToCart({ product, image }) {
 
-    const cart = useSelector((store) => store.cart.items)
+    const dispatch  = useDispatch()
+    const cartItems = useSelector(s => s.cart.items)
+    const cartItem  = cartItems.find(i => i.id === product._id)
 
-    const cartItem = cart.find(
-        (item) => item.id == product._id
-    )
+    const handleAdd = async () => {
+        await addToCartWithSync(dispatch, {
+            id:             product._id,
+            name:           product.name,
+            final_price:    product.final_price,
+            original_price: product.original_price,
+            discount:       product.discount,
+            stock:          product.stock,
+            thumbnail:      image,
+            qty:            1,
+        })
+        notify('Added to cart', true)
+    }
 
-    const dispatcher = useDispatch()
-
-    // =========================
-    // ADD TO CART FUNCTION
-    // =========================
-
-    const add_to_cart = async () => {
-
-        try {
-
-            const token = localStorage.getItem("token")
-
-            // =========================
-            // LOGIN USER
-            // =========================
-
-            if (token) {
-
-                await client.post(
-                    "cart/add_to_cart",
-                    {
-                        productId: product._id,
-                        qty: 1
-                    },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    }
-                )
-            }
-
-            // =========================
-            // REDUX + LOCAL STORAGE
-            // =========================
-
-            dispatcher(
-                addtocart({
-                    name: product.name,
-                    final_price: product.final_price,
-                    original_price: product.original_price,
-                    id: product._id,
-                    discount: product.discount,
-                    stock: product.stock,
-                    thumbnail: image,
-                    qty: 1
-                })
-            )
-
-            notify("Product Added To Cart", true)
-
-        } catch (error) {
-
-            console.log(error.response?.data)
-
-            notify("Something went wrong", false)
-        }
+    if (cartItem) {
+        return (
+            <div className="flex items-center justify-between w-full bg-gray-50 border border-gray-200 rounded-xl overflow-hidden h-9">
+                <button
+                    onClick={() => changeQtyWithSync(dispatch, { id: product._id, flag: 'dec' }, cartItems)}
+                    className="w-9 h-full flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-500 transition"
+                >
+                    <FiMinus size={13} />
+                </button>
+                <span className="flex-1 text-center text-sm font-black text-gray-800">
+                    {cartItem.qty}
+                </span>
+                <button
+                    onClick={() => changeQtyWithSync(dispatch, { id: product._id, flag: 'inc' }, cartItems)}
+                    className="w-9 h-full flex items-center justify-center bg-[#01A49E] text-white hover:bg-[#01857f] transition"
+                >
+                    <FiPlus size={13} />
+                </button>
+            </div>
+        )
     }
 
     return (
-
-        <div className="w-full">
-
-            {
-                cartItem ?
-
-                    <div className="flex items-center justify-between w-full border border-gray-200 rounded-lg overflow-hidden">
-
-                        {/* Minus */}
-                        <button
-                            onClick={() =>
-                                dispatcher(
-                                    qtyChange({
-                                        id: product._id,
-                                        flag: "dec"
-                                    })
-                                )
-                            }
-                            className="w-10 h-9 flex items-center justify-center text-red-500 hover:bg-red-50 transition text-lg font-semibold"
-                        >
-                            −
-                        </button>
-
-                        {/* Quantity */}
-                        <h2 className="flex-1 text-center text-sm font-semibold text-gray-800 bg-gray-50 h-9 flex items-center justify-center">
-                            {cartItem.qty}
-                        </h2>
-
-                        {/* Plus */}
-                        <button
-                            onClick={() =>
-                                dispatcher(
-                                    qtyChange({
-                                        id: product._id,
-                                        flag: "inc"
-                                    })
-                                )
-                            }
-                            className="w-10 h-9 flex items-center justify-center text-white bg-black hover:bg-gray-800 transition text-lg font-semibold"
-                        >
-                            +
-                        </button>
-
-                    </div>
-
-                    :
-
-                    <button
-                        onClick={add_to_cart}
-                        className="w-full bg-black text-white text-xs font-medium py-2 rounded-lg hover:bg-gray-900 transition"
-                    >
-                        Add to Cart
-                    </button>
-            }
-
-        </div>
+        <button
+            onClick={handleAdd}
+            className="w-full flex items-center justify-center gap-1.5 bg-gray-900 hover:bg-[#01A49E] text-white text-xs font-bold py-2.5 rounded-xl transition-colors duration-200"
+        >
+            <FiShoppingCart size={13} />
+            Add to Cart
+        </button>
     )
 }

@@ -15,7 +15,7 @@ export default async function Page({ params, searchParams }) {
     const sort = search_promise.sort
 
     const product_response = await getProducts({ status: true, brand_slug, category_slug, color_slug, min_price, max_price, sort });
-
+   
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 

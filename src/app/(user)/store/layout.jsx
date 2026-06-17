@@ -7,6 +7,7 @@ import { BreadcrumbBar } from "@/components/user/Store/BreadCrumps";
 import { ShopHero } from "@/components/user/Store/ShopHero";
 import PopularCategories from "@/components/user/Store/PopularCategory";
 import SortFilter from "@/components/user/Store/SortFilter";
+import FilterDrawer from "@/components/user/Store/FilterDrawer";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -26,22 +27,25 @@ export const metadata = {
 export default function RootLayout({ children }) {
     return (
         <div className="min-h-full flex flex-col">
-            <div className='w-full mx-auto px-8'>
-                <div className="py-5 space-y-4">
+            <div className='w-full max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8'>
+                <div className="py-4 sm:py-5 space-y-4">
                     <BreadcrumbBar />
                     <ShopHero />
                 </div>
-                <div className='mb-10'>
+                <div className='mb-6 sm:mb-10 overflow-x-auto'>
                     <PopularCategories />
                 </div>
 
-                <div className="flex gap-8 items-start">
-                    <div className="w-[280px] shrink-0">
+                <div className="flex gap-6 lg:gap-8 items-start">
+                    <div className="hidden lg:block w-[260px] xl:w-[280px] shrink-0 sticky top-20">
                         <StoreSideSection />
                     </div>
-
-                    <main className="flex-1 space-y-6 min-w-0">
-                        <SortFilter />
+                    <main className="flex-1 space-y-6 min-w-0 w-full">
+                        <SortFilter filterDrawer={
+                            <FilterDrawer>
+                                <StoreSideSection />
+                            </FilterDrawer>
+                        } />
                         {children}
                     </main>
                 </div>

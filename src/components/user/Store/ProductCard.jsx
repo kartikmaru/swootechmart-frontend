@@ -1,100 +1,94 @@
-import { IoCheckmarkCircle } from "react-icons/io5";
-import { MdCancel } from "react-icons/md";
-import { FaHeart } from "react-icons/fa";
-import AddToCart from "./AddToCart";
+import { IoCheckmarkCircle } from "react-icons/io5"
+import { FiHeart, FiEye } from "react-icons/fi"
+import AddToCart from "./AddToCart"
+import Link from "next/link"
 
 export default function ProductCard({ product, image }) {
+  const savings = product.original_price - product.final_price
 
   return (
-    <div className="w-full max-w-[240px] bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
+    <div className="bg-white rounded-2xl border border-gray-100 hover:border-[#01A49E]/30 hover:shadow-lg transition-all duration-300 group overflow-hidden flex flex-col">
 
-      {/* Image Section */}
-      <div className="relative mb-4">
+      {/* ── Image ──────────────────────────────────────────────── */}
+      <Link href={`/product/${product._id}`} className="relative bg-gray-50 p-4 block">
 
-        {/* ❤️ Wishlist Button */}
-        <button className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full bg-white shadow-md hover:bg-red-50 transition flex items-center justify-center">
-          <FaHeart className="text-gray-400 hover:text-red-500 text-sm" />
-        </button>
+        {/* Discount badge */}
+        {product.discount > 0 && (
+          <span className="absolute top-3 left-3 bg-[#01A49E] text-white text-[10px] font-black px-2 py-0.5 rounded-full z-10">
+            -{product.discount}%
+          </span>
+        )}
 
-        {/* Image */}
-        <div className="aspect-square flex items-center justify-center overflow-hidden rounded-xl bg-gray-50 p-3">
+        {/* Action buttons */}
+        <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10 lg:opacity-0 lg:group-hover:opacity-100 opacity-100 transition-all duration-200 lg:translate-x-2 lg:group-hover:translate-x-0">
+          <button className="w-8 h-8 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition border border-gray-100">
+            <FiHeart size={14} />
+          </button>
+          <Link href={`/product/${product._id}`}>
+            <button className="w-8 h-8 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-[#01A49E] hover:bg-teal-50 transition border border-gray-100">
+              <FiEye size={14} />
+            </button>
+          </Link>
+        </div>
+
+        {/* Product image */}
+        <div className="aspect-square flex items-center justify-center overflow-hidden">
           <img
             src={image}
             alt={product.name}
-            className="object-contain h-full w-full group-hover:scale-110 transition-transform duration-300"
+            className="object-contain h-full w-full group-hover:scale-105 transition-transform duration-400"
           />
         </div>
-      </div>
+      </Link>
 
-      {/* Title */}
-      <h3 className="text-sm font-semibold text-gray-800 leading-snug mb-2 line-clamp-2 group-hover:text-black">
-        {product.name}
-      </h3>
+      {/* ── Info ───────────────────────────────────────────────── */}
+      <div className="p-3.5 flex flex-col flex-1 gap-2">
 
-      {/* Price Section */}
-      <div className="mb-3">
+        {/* Category pill */}
+        {product.category_Id?.name && (
+          <span className="text-[10px] font-semibold text-[#01A49E] bg-teal-50 px-2 py-0.5 rounded-full w-fit">
+            {product.category_Id.name}
+          </span>
+        )}
+
+        {/* Name */}
+        <h3 className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 group-hover:text-[#01A49E] transition-colors">
+          {product.name}
+        </h3>
+
+        {/* Price row */}
         <div className="flex items-center gap-2 flex-wrap">
-
-          <span className="text-lg font-bold text-black">
-            ₹{product.final_price}
+          <span className="text-base font-black text-gray-900">
+            ₹{product.final_price?.toLocaleString('en-IN')}
           </span>
-
-          <span className="text-sm text-gray-400 line-through">
-            ₹{product.original_price}
-          </span>
-
-          <span className="bg-red-100 text-red-600 text-[10px] font-semibold px-2 py-0.5 rounded">
-            {product.discount}% OFF
-          </span>
-
+          {product.original_price > product.final_price && (
+            <span className="text-xs text-gray-400 line-through">
+              ₹{product.original_price?.toLocaleString('en-IN')}
+            </span>
+          )}
         </div>
-      </div>
 
-      {/* Tags */}
-      <div className="flex gap-2 mb-3 flex-wrap">
-        <span className="bg-cyan-50 text-cyan-600 text-[10px] font-medium px-2 py-0.5 rounded">
-          FREE SHIPPING
-        </span>
-        <span className="bg-cyan-50 text-cyan-600 text-[10px] font-medium px-2 py-0.5 rounded">
-          FREE GIFT
-        </span>
-      </div>
+        {/* Savings */}
+        {savings > 0 && (
+          <p className="text-[10px] text-green-600 font-semibold">
+            You save ₹{savings.toLocaleString('en-IN')}
+          </p>
+        )}
 
-      {/* Stock */}
-      <div className="flex items-center gap-2 mb-3 text-xs font-medium text-gray-600">
-        <span
-          className="flex items-center justify-center text-base"
-          style={{ color: product.stock ? "#16a34a" : "#dc2626" }}
-        >
-          {product.stock ? <IoCheckmarkCircle /> : <MdCancel />}
-        </span>
-
-        <span>
-          {product.stock ? "In Stock" : "Unavailable"}
-        </span>
-      </div>
-
-      {/* Variants */}
-      <div className="flex gap-2 mb-4">
-        <button className="h-7 w-7 rounded-md border border-gray-200 overflow-hidden p-1 hover:border-gray-400 transition">
-          <img
-            src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e"
-            alt="Variant 1"
-            className="object-contain h-full w-full"
+        {/* Stock */}
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold mt-auto">
+          <IoCheckmarkCircle
+            className={product.stock ? 'text-green-500' : 'text-red-400'}
+            size={13}
           />
-        </button>
+          <span className={product.stock ? 'text-green-600' : 'text-red-400'}>
+            {product.stock ? 'In Stock' : 'Out of Stock'}
+          </span>
+        </div>
 
-        <button className="h-7 w-7 rounded-md border border-gray-200 overflow-hidden p-1 hover:border-gray-400 transition">
-          <img
-            src="https://images.unsplash.com/photo-1583394838336-acd977736f90"
-            alt="Variant 2"
-            className="object-contain h-full w-full"
-          />
-        </button>
+        {/* Add to cart */}
+        <AddToCart product={product} image={image} />
       </div>
-
-      {/* Button */}
-      <AddToCart product={product} image={image} />
     </div>
-  );
+  )
 }

@@ -1,5 +1,5 @@
 'use client'
-import { emptycart, qtyChange } from "@/redux/features/CartSlice";
+import { changeQtyWithSync, clearCartWithSync } from "@/utils/cartHelper";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -10,17 +10,17 @@ export default function CartUI() {
   const dispatch = useDispatch()
 
   return (
-    <div className="flex gap-10 p-10 bg-gray-100 min-h-screen">
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 p-4 sm:p-6 lg:p-10 bg-gray-100 min-h-screen">
 
       {/* LEFT SIDE */}
       <div className="flex-1 space-y-6">
 
         {
           cart?.items?.map((item, index) => (
-            <div key={index} className="flex gap-6 bg-white p-5 rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
+            <div key={index} className="flex flex-col sm:flex-row gap-4 sm:gap-6 bg-white p-4 sm:p-5 rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100">
 
               {/* Image Section */}
-              <div className="w-32 h-32 bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden">
+              <div className="w-full sm:w-32 h-32 bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                 <img
                   src={item?.thumbnail}
                   alt="Product"
@@ -33,11 +33,11 @@ export default function CartUI() {
 
                 {/* Top */}
                 <div>
-                  <h2 className="font-semibold text-lg text-gray-800 line-clamp-1">
+                  <h2 className="font-semibold text-base sm:text-lg text-gray-800 line-clamp-1">
                     {item?.name}
                   </h2>
 
-                  <p className="text-[#01A49E] font-bold text-xl mt-1">
+                  <p className="text-[#01A49E] font-bold text-lg sm:text-xl mt-1">
                     ₹{item?.final_price}
                   </p>
                 </div>
@@ -49,7 +49,7 @@ export default function CartUI() {
                   <div className="flex items-center border rounded-lg overflow-hidden">
 
                     <button
-                      onClick={() => dispatch(qtyChange({ id: item?.id, flag: "dec" }))}
+                      onClick={() => changeQtyWithSync(dispatch, { id: item?.id, flag: "dec" }, cart.items)}
                       className="w-9 h-9 flex items-center justify-center text-red-500 hover:bg-red-50 transition text-lg"
                     >
                       −
@@ -60,7 +60,7 @@ export default function CartUI() {
                     </span>
 
                     <button
-                      onClick={() => dispatch(qtyChange({ id: item?.id, flag: "inc" }))}
+                      onClick={() => changeQtyWithSync(dispatch, { id: item?.id, flag: "inc" }, cart.items)}
                       className="w-9 h-9 flex items-center justify-center bg-black text-white hover:bg-gray-800 transition text-lg"
                     >
                       +
@@ -93,7 +93,7 @@ export default function CartUI() {
       </div>
 
       {/* RIGHT SIDE */}
-      <div className="w-80 bg-white p-6 rounded-xl shadow border border-green-400 h-fit">
+      <div className="w-full lg:w-80 bg-white p-6 rounded-xl shadow border border-green-400 h-fit shrink-0">
         <h2 className="text-lg font-bold mb-4">Order Summary</h2>
 
         <div className="flex justify-between mb-2">
@@ -114,13 +114,13 @@ export default function CartUI() {
         </div>
 
         <Link href="/checkout">
-          <button className="mt-5 w-full bg-teal-600 text-white py-3 rounded-lg">
+          <button className="mt-5 w-full bg-teal-600 text-white py-3 rounded-lg font-semibold cursor-pointer hover:bg-teal-700 transition">
             CHECKOUT
           </button>
         </Link>
         <button
-          onClick={() => dispatch(emptycart())}
-          className="mt-3 bg-red-500 text-white px-4 py-2 rounded-lg"
+          onClick={() => clearCartWithSync(dispatch)}
+          className="mt-3 w-full bg-red-500 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer hover:bg-red-600 transition"
         >
           Clear Cart
         </button>

@@ -27,7 +27,7 @@ export default async function page({ searchParams }) {
 
     return (
         <>
-            <div className='grid grid-cols-5 gap-4'>
+            <div className='grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4'>
                 {
                     data.map((product) => (
                         <ProductCard product={product} key={product._id} image={`${meta.imageBaseUrl}${product.thumbnail}`} />
