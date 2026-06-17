@@ -35,6 +35,10 @@ export default function LoginPage() {
 
       if (res.data.success) {
         notify("Logged in successfully", true)
+        // Token localStorage me save — cross-origin cookie browser block karta hai
+        if (res.data.data?.token) {
+          localStorage.setItem('token', res.data.data.token)
+        }
 
         // Cart sync — silently, don't block redirect on failure
         try {

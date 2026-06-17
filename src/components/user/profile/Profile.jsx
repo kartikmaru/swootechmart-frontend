@@ -30,6 +30,7 @@ export default function Profile({ user }) {
         setLogoutLoading(true);
         try {
             await client.post('User/logout');
+            localStorage.removeItem('token');
             notify('Logged out successfully', true);
             router.push('/login');
         } catch {

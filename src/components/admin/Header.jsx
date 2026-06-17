@@ -44,6 +44,7 @@ export default function AdminHeader() {
         try {
             await client.post('User/logout')
         } catch (_) {}
+        localStorage.removeItem('token')
         notify('Logged out successfully', true)
         router.push('/login')
     }

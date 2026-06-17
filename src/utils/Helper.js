@@ -4,15 +4,25 @@ import axios from 'axios';
 const client = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   timeout: 30000,
-  headers: { "X-Custom-Header": "foobar" },
-  withCredentials: true
+  withCredentials: true,
 });
 
+// Har request me localStorage token ko Authorization header me lagao
+// Cookie cross-origin block hoti hai — ye workaround hai
+client.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers['Authorization'] = token
+    }
+  }
+  return config
+})
 
 const notify = (msg, flag) => {
   toast(msg, {
-    type: flag ? "success" : "error", // lowercase 'success'/'error'
-    icon: true,                        // allow default icon
+    type: flag ? "success" : "error",
+    icon: true,
   });
 };
 
