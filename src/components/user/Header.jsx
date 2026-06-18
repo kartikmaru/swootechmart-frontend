@@ -80,6 +80,17 @@ export default function Header({ user }) {
           {/* Right Side */}
           <div className='flex items-center gap-2 sm:gap-3'>
 
+            {/* My Orders — sirf logged in user ko dikh */}
+            {user && (
+              <Link
+                href="/orders"
+                className='hidden md:flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-[#01A49E] transition px-2 py-2'
+              >
+                <span>📦</span>
+                <span>My Orders</span>
+              </Link>
+            )}
+
             {/* User/Profile */}
             <Link
               href={user ? "/profile" : "/login"}
@@ -184,6 +195,15 @@ export default function Header({ user }) {
               </div>
               {user ? user.name : "Login / Register"}
             </Link>
+            {user && (
+              <Link
+                href="/orders"
+                onClick={() => setMenuOpen(false)}
+                className='flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition'
+              >
+                <span>📦</span> My Orders
+              </Link>
+            )}
           </div>
         )}
       </div>
