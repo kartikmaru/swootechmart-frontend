@@ -24,31 +24,27 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-
-
     return (
         <html
             lang="en"
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
         >
-            <body className="h-full flex">
+            <body className="min-h-full bg-gray-50">
                 <ToastContainer
                     position="top-right"
-                    autoClose={2000} // faster: 2 seconds instead of 5
+                    autoClose={2000}
                     hideProgressBar={false}
                     newestOnTop={false}
-                    closeOnClick={true} // allows closing on click
+                    closeOnClick={true}
                     rtl={false}
                     pauseOnFocusLoss
                     draggable
                     pauseOnHover
                     theme="dark"
-                    icon={true} // shows default icons
+                    icon={true}
                 />
-                <div className="flex-1">
-                    <div>
-                        {children}
-                    </div>
+                <div className="min-h-screen flex flex-col">
+                    {children}
                 </div>
             </body>
         </html>

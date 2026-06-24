@@ -35,9 +35,17 @@ export default function LoginPage() {
 
       if (res.data.success) {
         notify("Logged in successfully", true)
-        // Token localStorage me save — cross-origin cookie browser block karta hai
+
+        // Save token to localStorage — cross-origin cookie is blocked by browser,
+        // localStorage token is picked up by axios interceptor as Authorization header fallback
         if (res.data.data?.token) {
-          localStorage.setItem('token', res.data.data.token)
+          const token = res.data.data.token
+          localStorage.setItem('token', token)
+
+          // Also set a non-httpOnly cookie so Next.js middleware can detect auth state
+          // for protected route redirects (/checkout, /profile, /orders)
+          const maxAge = 30 * 24 * 60 * 60  // 30 days in seconds
+          document.cookie = `auth_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`
         }
 
         // Cart sync — silently, don't block redirect on failure

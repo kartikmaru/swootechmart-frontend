@@ -29,7 +29,7 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="h-full flex bg-gray-50">
+      <body className="h-full flex bg-gray-50 overflow-x-hidden">
         <ToastContainer
           position="top-right"
           autoClose={2000}
@@ -44,11 +44,14 @@ export default function RootLayout({ children }) {
           icon={true}
         />
 
-        <Sidebar />
+        {/* Sidebar — hidden on mobile, shown on md+ */}
+        <div className="hidden md:block shrink-0">
+          <Sidebar />
+        </div>
 
-        <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-screen overflow-hidden min-w-0">
           <AdminHeader />
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6">
             {children}
           </main>
         </div>

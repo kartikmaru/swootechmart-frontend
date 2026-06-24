@@ -1,3 +1,65 @@
 @import "tailwindcss";
 
+@theme {
+  /* ── Custom breakpoints (Tailwind v4 syntax) ─────────────────────────── */
+  --breakpoint-sm:   640px;
+  --breakpoint-md:   768px;
+  --breakpoint-lg:   1024px;
+  --breakpoint-xl:   1280px;
+  --breakpoint-2xl:  1536px;
+  --breakpoint-3xl:  1920px;
+  --breakpoint-4xl:  2560px;
 
+  /* ── Custom max-width container sizes ────────────────────────────────── */
+  --width-container:    1400px;
+  --width-container-sm: 1280px;
+  --width-container-lg: 1536px;
+
+  /* ── Brand colors ────────────────────────────────────────────────────── */
+  --color-brand:       #01A49E;
+  --color-brand-dark:  #01857f;
+  --color-brand-light: #e6f7f7;
+}
+
+/* ── Global container utility ─────────────────────────────────────────── */
+.container-app {
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-app { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .container-app { padding-left: 2rem; padding-right: 2rem; }
+}
+@media (min-width: 1920px) {
+  .container-app {
+    max-width: 1600px;
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+@media (min-width: 2560px) {
+  .container-app {
+    max-width: 2000px;
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}
+
+/* ── Fluid typography ─────────────────────────────────────────────────── */
+html {
+  font-size: clamp(14px, 1vw, 16px);
+}
+
+/* ── Scrollbar utilities ──────────────────────────────────────────────── */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Smooth scrolling ────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }

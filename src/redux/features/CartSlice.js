@@ -13,14 +13,15 @@ export const cartSlice = createSlice({
     reducers: {
         addtocart: (state, { payload }) => {
             const existingItem = state.items.find((item) => item.id == payload.id)
+            const addQty = Number(payload.qty) || 1   // how many are being added
             if (existingItem) {
-                existingItem.qty = (existingItem.qty || 0) + 1
+                existingItem.qty += addQty
+            } else {
+                state.items.push({ ...payload, qty: addQty })
             }
-            else {
-                state.items.push(payload)
-            }
-            state.original_total += Number(payload.original_price)
-            state.final_total += Number(payload.final_price)
+            // Multiply price by addQty — fixes bug where qty > 1 only added 1x price
+            state.original_total += Number(payload.original_price) * addQty
+            state.final_total    += Number(payload.final_price)    * addQty
             localStorage.setItem("cart", JSON.stringify(state))
         },
         emptycart: (state) => {
@@ -32,11 +33,11 @@ export const cartSlice = createSlice({
         lstoCart: (state) => {
             const cartItem = JSON.parse(localStorage.getItem("cart"))
             if (cartItem) {
-                state.items = cartItem.items
-                state.original_total = Number(cartItem.original_total)
-                state.final_total = Number(cartItem.final_total)
+                state.items = cartItem.items || []
+                // Recalculate totals from items — protects against stale cached totals
+                state.original_total = state.items.reduce((sum, i) => sum + Number(i.original_price) * (i.qty || 1), 0)
+                state.final_total    = state.items.reduce((sum, i) => sum + Number(i.final_price)    * (i.qty || 1), 0)
             }
-            // recently viewed bhi localStorage se load karo
             const rv = JSON.parse(localStorage.getItem("recentlyViewed") || "[]")
             state.recentlyViewed = rv
         },
@@ -45,37 +46,44 @@ export const cartSlice = createSlice({
             if (!cartItem) return;
             if (payload.flag == "inc") {
                 cartItem.qty++
-                state.original_total += Number(cartItem.original_price)
-                state.final_total += Number(cartItem.final_price)
             } else {
-                state.original_total -= Number(cartItem.original_price)
-                state.final_total -= Number(cartItem.final_price)
                 if (cartItem.qty > 1) {
                     cartItem.qty--
                 } else {
                     state.items = state.items.filter((item) => item.id != payload.id)
                 }
             }
+            // Recalculate totals from scratch — prevents accumulation bugs
+            state.original_total = state.items.reduce((sum, i) => sum + Number(i.original_price) * i.qty, 0)
+            state.final_total    = state.items.reduce((sum, i) => sum + Number(i.final_price)    * i.qty, 0)
             if (state.original_total < 0) state.original_total = 0
-            if (state.final_total < 0) state.final_total = 0
+            if (state.final_total    < 0) state.final_total    = 0
             localStorage.setItem("cart", JSON.stringify(state))
         },
 
-        // Recently Viewed — product detail page pe call hoga
-        // Max 8 products track karta hai, duplicates remove karta hai
         addRecentlyViewed: (state, { payload }) => {
             const exists = state.recentlyViewed.findIndex(p => p.id === payload.id)
             if (exists !== -1) {
-                state.recentlyViewed.splice(exists, 1)  // purana hata do
+                state.recentlyViewed.splice(exists, 1)
             }
-            state.recentlyViewed.unshift(payload)        // naya sab se aage
+            state.recentlyViewed.unshift(payload)
             if (state.recentlyViewed.length > 8) {
                 state.recentlyViewed = state.recentlyViewed.slice(0, 8)
             }
             localStorage.setItem("recentlyViewed", JSON.stringify(state.recentlyViewed))
+        },
+
+        // Completely remove one item from cart regardless of qty
+        removeItem: (state, { payload }) => {
+            state.items = state.items.filter(item => item.id !== payload.id)
+            state.original_total = state.items.reduce((sum, i) => sum + Number(i.original_price) * i.qty, 0)
+            state.final_total    = state.items.reduce((sum, i) => sum + Number(i.final_price)    * i.qty, 0)
+            if (state.original_total < 0) state.original_total = 0
+            if (state.final_total    < 0) state.final_total    = 0
+            localStorage.setItem("cart", JSON.stringify(state))
         }
     },
 })
 
-export const { addtocart, emptycart, lstoCart, qtyChange, addRecentlyViewed } = cartSlice.actions
+export const { addtocart, emptycart, lstoCart, qtyChange, addRecentlyViewed, removeItem } = cartSlice.actions
 export default cartSlice.reducer

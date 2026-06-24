@@ -27,20 +27,22 @@ export const metadata = {
 export default function RootLayout({ children }) {
     return (
         <div className="min-h-full flex flex-col">
-            <div className='w-full max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8'>
+            {/* container-app centers content up to 1400px, scales for 3xl/4xl via CSS */}
+            <div className="container-app">
                 <div className="py-4 sm:py-5 space-y-4">
                     <BreadcrumbBar />
                     <ShopHero />
                 </div>
-                <div className='mb-6 sm:mb-10 overflow-x-auto'>
+                <div className="mb-6 sm:mb-8 overflow-x-auto scrollbar-hide">
                     <PopularCategories />
                 </div>
 
                 <div className="flex gap-6 lg:gap-8 items-start">
-                    <div className="hidden lg:block w-[260px] xl:w-[280px] shrink-0 sticky top-20">
+                    {/* Sidebar — visible lg+ */}
+                    <div className="hidden lg:block w-[240px] xl:w-[260px] 2xl:w-[280px] shrink-0 sticky top-24">
                         <StoreSideSection />
                     </div>
-                    <main className="flex-1 space-y-6 min-w-0 w-full">
+                    <main className="flex-1 min-w-0 w-full space-y-5">
                         <SortFilter filterDrawer={
                             <FilterDrawer>
                                 <StoreSideSection />

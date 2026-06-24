@@ -9,13 +9,13 @@
 
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { qtyChange, addRecentlyViewed } from '@/redux/features/CartSlice'
-import { addToCartWithSync, changeQtyWithSync } from '@/utils/cartHelper'
+import { addtocart, qtyChange, addRecentlyViewed } from '@/redux/features/CartSlice'
+import { addToCartWithSync, changeQtyWithSync, removeFromCartWithSync } from '@/utils/cartHelper'
 import { notify } from '@/utils/Helper'
 import Link from 'next/link'
 import {
     FiShoppingCart, FiHeart, FiShare2, FiTruck,
-    FiShield, FiRefreshCw, FiPhone, FiChevronRight, FiMinus, FiPlus
+    FiShield, FiRefreshCw, FiPhone, FiChevronRight, FiMinus, FiPlus, FiTrash
 } from 'react-icons/fi'
 import { IoCheckmarkCircle, IoStarSharp } from 'react-icons/io5'
 import { MdCancel } from 'react-icons/md'
@@ -46,8 +46,15 @@ export default function ProductDetailClient({ product, imageBaseUrl, thumbBaseUr
     const cartItems = useSelector(s => s.cart.items)
 
     // Cart me ye product pehle se hai ya nahi
-    // Array.find() → id match hone wala item return karta hai, warna undefined
-    const cartItem  = cartItems.find(i => i.id === product._id)
+    const cartItem = cartItems.find(i => i.id === product._id)
+
+    // Reset local qty to 1 when item is removed from cart
+    // This prevents stale qty showing after item removal
+    useEffect(() => {
+        if (!cartItem) {
+            setQty(1)
+        }
+    }, [cartItem])
 
     // Product page open hone pe recently viewed me add karo
     useEffect(() => {
@@ -279,10 +286,8 @@ export default function ProductDetailClient({ product, imageBaseUrl, thumbBaseUr
                     <div>
                         <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Total Price</p>
                         <p className="text-3xl font-black text-gray-900">
-                            ₹{(product.final_price * qty)?.toLocaleString('en-IN')}
+                            ₹{(product.final_price * (cartItem ? cartItem.qty : qty))?.toLocaleString('en-IN')}
                         </p>
-                        {/* 🧠 total price = final_price × qty
-                            qty state change hone pe ye automatically update hota hai */}
                         <p className="text-xs text-green-600 font-semibold mt-0.5">
                             {product.stock
                                 ? <span className="flex items-center gap-1"><IoCheckmarkCircle size={13} /> In Stock — Ships from India</span>
@@ -292,18 +297,14 @@ export default function ProductDetailClient({ product, imageBaseUrl, thumbBaseUr
                     </div>
 
                     {/* Quantity selector */}
-                    {/* 🧠 qty state:
-                        + click → qty badho (stock se zyada nahi)
-                        - click → qty ghato (1 se kam nahi)
-                        Total price automatically update hota hai kyunki
-                        final_price * qty → qty change = price change */}
                     {!cartItem ? (
                         <div>
                             <p className="text-xs text-gray-500 font-semibold mb-2">Quantity</p>
-                            <div className="flex items-center gap-0 bg-white border border-gray-200 rounded-xl overflow-hidden w-fit">
+                            <div className="flex items-center bg-white border border-gray-200 rounded-xl overflow-hidden w-fit">
                                 <button
                                     onClick={() => setQty(q => Math.max(1, q - 1))}
-                                    className="w-10 h-10 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-red-500 transition"
+                                    disabled={qty <= 1}
+                                    className="w-10 h-10 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-red-500 transition disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                     <FiMinus size={14} />
                                 </button>
@@ -317,22 +318,37 @@ export default function ProductDetailClient({ product, imageBaseUrl, thumbBaseUr
                             </div>
                         </div>
                     ) : (
-                        /* Cart me already hai toh qty change controls */
-                        <div>
-                            <p className="text-xs text-gray-500 font-semibold mb-2">In Cart</p>
-                            <div className="flex items-center gap-0 bg-white border border-gray-200 rounded-xl overflow-hidden w-fit">
+                        /* Cart me already hai — qty controls + remove button */
+                        <div className="space-y-2">
+                            <p className="text-xs text-gray-500 font-semibold">In Cart</p>
+                            <div className="flex items-center gap-3 flex-wrap">
+                                {/* +/- controls — minimum 1, dec at 1 is disabled (use Remove instead) */}
+                                <div className="flex items-center bg-white border border-gray-200 rounded-xl overflow-hidden">
+                                    <button
+                                        onClick={() => {
+                                            if (cartItem.qty > 1) {
+                                                changeQtyWithSync(dispatch, { id: product._id, flag: 'dec' }, cartItems)
+                                            }
+                                        }}
+                                        disabled={cartItem.qty <= 1}
+                                        className="w-10 h-10 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-500 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                        <FiMinus size={14} />
+                                    </button>
+                                    <span className="w-12 text-center font-black text-[#01A49E] text-sm">{cartItem.qty}</span>
+                                    <button
+                                        onClick={() => changeQtyWithSync(dispatch, { id: product._id, flag: 'inc' }, cartItems)}
+                                        className="w-10 h-10 flex items-center justify-center bg-gray-900 text-white hover:bg-[#01A49E] transition"
+                                    >
+                                        <FiPlus size={14} />
+                                    </button>
+                                </div>
+                                {/* Remove button — explicit action to remove from cart */}
                                 <button
-                                    onClick={() => changeQtyWithSync(dispatch, { id: product._id, flag: 'dec' }, cartItems)}
-                                    className="w-10 h-10 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-500 transition"
+                                    onClick={() => removeFromCartWithSync(dispatch, product._id, cartItems)}
+                                    className="flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-2 rounded-xl border border-red-100 hover:border-red-200 transition"
                                 >
-                                    <FiMinus size={14} />
-                                </button>
-                                <span className="w-12 text-center font-black text-[#01A49E] text-sm">{cartItem.qty}</span>
-                                <button
-                                    onClick={() => changeQtyWithSync(dispatch, { id: product._id, flag: 'inc' }, cartItems)}
-                                    className="w-10 h-10 flex items-center justify-center bg-gray-900 text-white hover:bg-[#01A49E] transition"
-                                >
-                                    <FiPlus size={14} />
+                                    <FiTrash size={12} /> Remove
                                 </button>
                             </div>
                         </div>

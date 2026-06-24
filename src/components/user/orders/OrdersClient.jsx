@@ -30,7 +30,11 @@ export default function OrdersClient() {
             setOrders(res.data.data || [])
             setImageBaseUrl(res.data.meta?.imageBaseUrl || '')
         } catch (err) {
-            setError('Failed to load orders. Please try again.')
+            const msg = err?.response?.data?.message
+                || err?.response?.data?.msg
+                || 'Failed to load orders. Please try again.'
+            console.error('[OrdersClient] fetchOrders error:', err)
+            setError(msg)
         } finally {
             setLoading(false)
         }
@@ -143,6 +147,11 @@ export default function OrdersClient() {
                             key={order._id}
                             order={order}
                             imageBaseUrl={imageBaseUrl}
+                            onCancelSuccess={(orderId, updatedFields) => {
+                                setOrders(prev => prev.map(o =>
+                                    o._id === orderId ? { ...o, ...updatedFields } : o
+                                ))
+                            }}
                         />
                     ))}
                 </div>

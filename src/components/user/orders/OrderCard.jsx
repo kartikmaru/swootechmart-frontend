@@ -10,14 +10,26 @@ function formatDate(dateStr) {
     })
 }
 
-export default function OrderCard({ order, imageBaseUrl }) {
-    const [open, setOpen] = useState(false)
+export default function OrderCard({ order: initialOrder, imageBaseUrl, onCancelSuccess }) {
+    const [open,  setOpen]  = useState(false)
+    // Keep a local copy of the order so cancel updates UI immediately without page reload
+    const [order, setOrder] = useState(initialOrder)
 
     const paymentBadge = {
-        pending: 'bg-yellow-100 text-yellow-700',
-        paid:    'bg-green-100 text-green-700',
-        failed:  'bg-red-100 text-red-700',
+        pending:        'bg-yellow-100 text-yellow-700',
+        paid:           'bg-green-100 text-green-700',
+        failed:         'bg-red-100 text-red-700',
+        refund_pending: 'bg-orange-100 text-orange-700',
+        refunded:       'bg-teal-100 text-teal-700',
     }[order.paymentStatus] || 'bg-gray-100 text-gray-600'
+
+    // Called by OrderDetails after a successful cancel API call
+    const handleCancelSuccess = (updatedFields) => {
+        // Update local state — status badge and cancel button update instantly
+        setOrder(prev => ({ ...prev, ...updatedFields }))
+        // Also bubble up to OrdersClient so the filter counts update
+        onCancelSuccess?.(order._id, updatedFields)
+    }
 
     return (
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition">
@@ -41,9 +53,10 @@ export default function OrderCard({ order, imageBaseUrl }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
+                    {/* Status badge reflects local state — updates instantly on cancel */}
                     <OrderStatusBadge status={order.orderStatus} />
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${paymentBadge}`}>
-                        {order.paymentStatus}
+                        {order.paymentStatus === 'refund_pending' ? 'Refund Pending' : order.paymentStatus}
                     </span>
                     <span className="text-base font-black text-gray-900">
                         ₹{order.totalAmount?.toLocaleString('en-IN')}
@@ -92,7 +105,13 @@ export default function OrderCard({ order, imageBaseUrl }) {
             </div>
 
             {/* ── Expanded Details ─────────────────────────────────────── */}
-            {open && <OrderDetails order={order} imageBaseUrl={imageBaseUrl} />}
+            {open && (
+                <OrderDetails
+                    order={order}
+                    imageBaseUrl={imageBaseUrl}
+                    onCancelSuccess={handleCancelSuccess}
+                />
+            )}
         </div>
     )
 }

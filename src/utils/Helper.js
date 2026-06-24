@@ -4,16 +4,18 @@ import axios from 'axios';
 const client = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   timeout: 30000,
-  withCredentials: true,
+  withCredentials: true,   // send cookies on cross-origin requests (works when backend CORS allows exact origin + credentials)
 });
 
-// Har request me localStorage token ko Authorization header me lagao
-// Cookie cross-origin block hoti hai — ye workaround hai
+// Request interceptor:
+// Cross-origin deployments (Vercel frontend → Render backend) can block cookies.
+// As a reliable fallback, we also send the token from localStorage as "Bearer <token>" in the Authorization header.
+// The backend auth middleware checks cookie first, then Authorization header.
 client.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token')
     if (token) {
-      config.headers['Authorization'] = token
+      config.headers['Authorization'] = `Bearer ${token.trim()}`
     }
   }
   return config

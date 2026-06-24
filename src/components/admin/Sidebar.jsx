@@ -55,25 +55,27 @@ export default function Sidebar() {
 
 
     return (
-        <div className={`${open ? "w-64" : "w-20"} min-h-screen shadow-xl sticky duration-200  p-4 pl-5 `}>
-            <h1 className={`${open ? "justify-between" : "justify-center mt-2"} flex items-center text-2xl font-bold`}>
-                {
-                    open &&
-                    <span className='text-orange-400'>Ishop <span className='text-black'>Admin</span> </span>
-                }
-                <button className='cursor-pointer' onClick={() => Setopen(!open)}>{open ? <FaBarsStaggered /> : <FaBars />}</button></h1>
-            <div className="mt-16 space-y-2 ">
-                {
-                    lists.map((data, index) => (
-                        <Link href={data.path} key={index} className={` ${active == data.path ? "bg-orange-400 text-white rounded flex gap-4 text-lg font-semibold items-center  rounded-2xl p-3 " : "flex hover:bg-orange-200 gap-4 text-lg font-semibold items-center hover:bg-orange-200 rounded-2xl p-3  duration-100"}  duration-200 ${open ? "" : "justify-center items-center"}`}><span>{data.icon}</span>
-                            {
-                                open &&
-                                data.name
-                            }
-
-                        </Link>
-                    ))
-                }
+        <div className={`${open ? "w-64" : "w-20"} min-h-screen h-full shadow-xl sticky top-0 duration-200 p-4 pl-5 bg-white shrink-0`}>
+            <h1 className={`${open ? "justify-between" : "justify-center mt-2"} flex items-center text-xl font-bold`}>
+                {open && (
+                    <span className="text-orange-400">Ishop <span className="text-black">Admin</span></span>
+                )}
+                <button className="cursor-pointer" onClick={() => Setopen(!open)}>
+                    {open ? <FaBarsStaggered /> : <FaBars />}
+                </button>
+            </h1>
+            <div className="mt-10 space-y-1.5">
+                {lists.map((data, index) => (
+                    <Link href={data.path} key={index}
+                        className={`${active === data.path
+                            ? "bg-orange-400 text-white"
+                            : "text-gray-700 hover:bg-orange-100"
+                        } flex gap-3 text-base font-semibold items-center rounded-2xl p-3 transition duration-150
+                        ${open ? "" : "justify-center"}`}>
+                        <span className="shrink-0">{data.icon}</span>
+                        {open && <span className="truncate">{data.name}</span>}
+                    </Link>
+                ))}
             </div>
         </div>
     )

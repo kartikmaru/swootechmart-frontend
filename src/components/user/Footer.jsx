@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import Link from 'next/link'
 import { FiFacebook, FiTwitter, FiInstagram, FiYoutube, FiMail, FiPhone, FiMapPin } from 'react-icons/fi'
 
@@ -23,9 +23,9 @@ export default function Footer() {
     return (
         <footer className="bg-gray-900 text-gray-300">
 
-            {/* ── Top Strip ───────────────────────────────────────────── */}
+            {/* â”€â”€ Top Strip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="bg-[#01A49E] py-4 px-4 sm:px-8">
-                <div className="max-w-[1500px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="container-app flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div>
                         <h3 className="text-white font-black text-lg">Get 10% off your first order</h3>
                         <p className="text-teal-100 text-sm">Subscribe to our newsletter for deals & updates</p>
@@ -43,8 +43,8 @@ export default function Footer() {
                 </div>
             </div>
 
-            {/* ── Main Footer ─────────────────────────────────────────── */}
-            <div className="max-w-[1500px] mx-auto px-4 sm:px-8 py-10 sm:py-12">
+            {/* â”€â”€ Main Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            <div className="container-app py-10 sm:py-12 px-0">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8 sm:gap-10">
 
                     {/* Brand col */}
@@ -110,11 +110,11 @@ export default function Footer() {
                 </div>
             </div>
 
-            {/* ── Bottom Bar ──────────────────────────────────────────── */}
+            {/* â”€â”€ Bottom Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="border-t border-gray-800 px-4 sm:px-8 py-5">
-                <div className="max-w-[1500px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="container-app flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-gray-500 text-xs">
-                        © {new Date().getFullYear()} Swoo Tech Mart. All rights reserved.
+                        Â© {new Date().getFullYear()} Swoo Tech Mart. All rights reserved.
                     </p>
                     {/* Payment icons */}
                     <div className="flex items-center gap-2">
@@ -131,3 +131,4 @@ export default function Footer() {
         </footer>
     )
 }
+

@@ -1,3 +1,5 @@
+'use client'
+
 import { IoCheckmarkCircle } from "react-icons/io5"
 import { FiHeart, FiEye } from "react-icons/fi"
 import AddToCart from "./AddToCart"
@@ -24,11 +26,14 @@ export default function ProductCard({ product, image }) {
           <button className="w-8 h-8 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition border border-gray-100">
             <FiHeart size={14} />
           </button>
-          <Link href={`/product/${product._id}`}>
-            <button className="w-8 h-8 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-[#01A49E] hover:bg-teal-50 transition border border-gray-100">
-              <FiEye size={14} />
-            </button>
-          </Link>
+          {/* Quick-view button — outer Link already wraps the whole image section,
+              so we use a plain button here to avoid nested <a> tags */}
+          <button
+            onClick={(e) => { e.preventDefault(); window.location.href = `/product/${product._id}` }}
+            className="w-8 h-8 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-[#01A49E] hover:bg-teal-50 transition border border-gray-100"
+          >
+            <FiEye size={14} />
+          </button>
         </div>
 
         {/* Product image */}

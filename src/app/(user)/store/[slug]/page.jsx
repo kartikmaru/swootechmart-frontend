@@ -17,19 +17,15 @@ export default async function Page({ params, searchParams }) {
     const product_response = await getProducts({ status: true, brand_slug, category_slug, color_slug, min_price, max_price, sort });
    
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
-            {product_response?.data.map((prod) => {
-                return (
-                    <ProductCard
-                        key={prod._id}
-                        product={prod}
-                        image={product_response?.meta?.imageBaseUrl + prod.thumbnail}
-                        user={null}
-                    />
-                )
-            })}
-
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-4">
+            {product_response?.data.map((prod) => (
+                <ProductCard
+                    key={prod._id}
+                    product={prod}
+                    image={product_response?.meta?.imageBaseUrl + prod.thumbnail}
+                    user={null}
+                />
+            ))}
         </div>
     );
 }

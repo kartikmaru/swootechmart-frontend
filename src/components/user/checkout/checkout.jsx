@@ -1,231 +1,291 @@
-'use client';
+﻿'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSelector } from 'react-redux';
-import { client } from '@/utils/Helper';
+import { useSelector, useDispatch } from 'react-redux';
+import { client, notify } from '@/utils/Helper';
 import { useRouter } from 'next/navigation';
-import { useRazorpay, RazorpayOrderOptions } from "react-razorpay";
+import { useRazorpay } from "react-razorpay";
+import { emptycart } from '@/redux/features/CartSlice';
 
 export default function Checkout({ user }) {
     const { Razorpay } = useRazorpay();
     const [paymentMethod, setPaymentMethod] = useState('cod');
-    const [seladdress, setSeladdress] = useState(0)
-    const [addresses, setAddresses] = useState(user?.addresses || []);
-    const router = useRouter()
+    const [seladdress,    setSeladdress]    = useState(0);
+    const [addresses,     setAddresses]     = useState(user?.addresses || []);
+    const [loading,       setLoading]       = useState(false);
+    const router   = useRouter();
+    const dispatch = useDispatch();
 
+    const cart    = useSelector((store) => store.cart);
+    const isEmpty = !cart?.items || cart.items.length === 0;
 
+    useEffect(() => {
+        if (isEmpty) router.replace('/cart');
+    }, [isEmpty, router]);
 
-
-    const cart = useSelector((store) => store.cart)
+    useEffect(() => {
+        if (!user) router.replace('/login?redirect=/checkout');
+    }, [user, router]);
 
     const handleOrder = async () => {
-
-        const orderData = {
-            address: addresses[seladdress],
-            paymentMethod
+        if (!user) {
+            notify('Please login to place an order', false);
+            router.push('/login?redirect=/checkout');
+            return;
+        }
+        if (isEmpty) {
+            notify('Your cart is empty', false);
+            router.push('/cart');
+            return;
+        }
+        if (addresses.length === 0) {
+            notify('Please add a delivery address first', false);
+            return;
         }
 
+        setLoading(true);
+
+        const orderData = {
+            address:       addresses[seladdress],
+            paymentMethod,
+        };
+
+        // Debug log — check what is being sent
+        console.log('[Checkout] Sending order:', {
+            url:    `${process.env.NEXT_PUBLIC_API_BASE_URL}order/place`,
+            method: 'POST',
+            data:   orderData,
+        });
+
         try {
-            const response = await client.post("order/place", orderData)
-            if (paymentMethod == "cod") {
-                if (response.data.success) {
-                    router.push(`/thank-you/${response.data.order_id}`)
-                }
+            const response = await client.post('order/place', orderData);
+            console.log('[Checkout] Response:', response.data);
+
+            if (!response.data.success) {
+                notify(response.data.message || response.data.msg || 'Order failed. Please try again.', false);
+                return;
+            }
+
+            if (paymentMethod === 'cod') {
+                dispatch(emptycart());
+                try { await client.delete('cart/clear'); } catch (_) { }
+                notify('Order placed successfully!', true);
+                router.push(`/thank-you/${response.data.order_id}`);
+
             } else {
-                console.log(response.data)
+                // Store address reference to pass to /verify after payment
+                const orderAddress = addresses[seladdress]
+
                 const options = {
-                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_API,
-                    currency: "INR",
-                    name: "WsCubeTeck .pvt .ltd",
-                    description: "Test Transaction",
-                    order_id: response.data.payment_order_id, // Generate order_id on server
-                    handler: async (response) => {
-                        const verifyRespose = await client.post("order/verify", response);
-                        console.log(verifyRespose)
+                    key:         process.env.NEXT_PUBLIC_RAZORPAY_KEY_API,
+                    amount:      response.data.amount,        // paise from backend
+                    currency:    response.data.currency || 'INR',
+                    name:        'SwooTechMart',
+                    description: 'Order Payment',
+                    order_id:    response.data.payment_order_id,
+                    handler: async (razorpayResponse) => {
+                        // Payment succeeded — NOW verify and create DB order
+                        try {
+                            const verifyRes = await client.post('order/verify', {
+                                razorpay_order_id:   razorpayResponse.razorpay_order_id,
+                                razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+                                razorpay_signature:  razorpayResponse.razorpay_signature,
+                                address:             orderAddress,   // needed to create the DB order
+                                paymentMethod:       'online',
+                            });
+                            if (verifyRes.data.success) {
+                                dispatch(emptycart());
+                                try { await client.delete('cart/clear'); } catch (_) { }
+                                notify('Payment successful! Order confirmed.', true);
+                                router.push(`/thank-you/${verifyRes.data.orderId}`);
+                            } else {
+                                notify(verifyRes.data.message || 'Payment verification failed.', false);
+                                setLoading(false);
+                            }
+                        } catch (err) {
+                            console.error('[Checkout] Verify error:', err);
+                            const msg = err?.response?.data?.message || 'Payment verification error. Contact support.';
+                            notify(msg, false);
+                            setLoading(false);
+                        }
                     },
                     prefill: {
-                        name: user.name ?? "John Doe",
-                        email: user.email,
-                        contact: "8233999833",
+                        name:    user.name ?? '',
+                        email:   user.email ?? '',
+                        contact: orderAddress?.mobile ?? '',
                     },
-                    theme: {
-                        color: "#F37254",
-                    },
-                }
-
+                    theme: { color: '#01A49E' },
+                    modal: {
+                        // User closed Razorpay without paying — no DB order was created, nothing to undo
+                        ondismiss: () => {
+                            notify('Payment cancelled. No order was placed.', false);
+                            setLoading(false);
+                        }
+                    }
+                };
                 const razorpayInstance = new Razorpay(options);
                 razorpayInstance.open();
-
+                // Keep loading=true until handler or ondismiss fires
+                return;
             }
 
         } catch (error) {
-            console.log(error)
+            // Detailed error logging so we can see exact failure cause
+            console.error('[Checkout] Order error:', {
+                message:  error.message,
+                code:     error.code,
+                status:   error?.response?.status,
+                data:     error?.response?.data,
+                config:   {
+                    url:      error?.config?.url,
+                    baseURL:  error?.config?.baseURL,
+                    method:   error?.config?.method,
+                    headers:  {
+                        Authorization: error?.config?.headers?.Authorization ? 'Bearer [set]' : 'not set',
+                        'Content-Type': error?.config?.headers?.['Content-Type'],
+                    }
+                }
+            });
+
+            let msg = 'Something went wrong. Please try again.';
+
+            if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+                msg = 'Cannot connect to server. Please check your internet connection or try again in a moment.';
+            } else if (error.code === 'ECONNABORTED') {
+                msg = 'Request timed out. The server may be starting up — please wait 30 seconds and try again.';
+            } else if (error?.response?.status === 401) {
+                msg = 'Your session has expired. Please login again.';
+                router.push('/login?redirect=/checkout');
+            } else if (error?.response?.status === 400) {
+                msg = error?.response?.data?.message || error?.response?.data?.msg || 'Invalid order data.';
+            } else if (error?.response?.status >= 500) {
+                msg = 'Server error. Please try again in a moment.';
+            } else {
+                msg = error?.response?.data?.message || error?.response?.data?.msg || msg;
+            }
+
+            notify(msg, false);
         } finally {
-
+            setLoading(false);
         }
+    };
 
+    if (isEmpty || !user) return null;
 
-
-
-    }
+    // Format rupee amount — unicode to avoid encoding issues
+    const formatRupees = (amount) => `\u20B9${Number(amount || 0).toLocaleString('en-IN')}`;
 
     return (
+        <div className="container-app py-6 sm:py-8">
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900 mb-6">Checkout</h1>
 
-        <div className="min-h-screen bg-gray-100 p-6">
-
-            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
                 {/* LEFT SECTION */}
-                <div className="md:col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-5">
 
-                    {/* ADDRESS SECTION */}
-                    <div className="bg-white p-5 rounded-2xl shadow">
-
-                        <div className="flex justify-between items-center mb-5">
-
-                            <h2 className="text-2xl font-semibold text-gray-800">
-                                Select Address
-                            </h2>
-
-                            <Link href={"/profile"}>
-                                <button
-                                    className="bg-teal-500 hover:bg-teal-600 text-white text-sm px-4 py-2 rounded-lg transition"
-                                >
-                                    + Add New
-                                </button>
+                    {/* ADDRESS */}
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-base sm:text-lg font-black text-gray-800">Select Address</h2>
+                            <Link href="/profile"
+                                className="bg-[#01A49E] hover:bg-[#01857f] text-white text-xs sm:text-sm px-3 py-1.5 rounded-lg transition font-semibold">
+                                + Add New
                             </Link>
-
                         </div>
 
-                        <div className="space-y-4">
-
-                            {addresses.map((addr, index) => (
-
-                                <div
-                                    key={index}
-                                    onClick={() => setSeladdress(index)}
-                                    className={`border rounded-xl p-4 cursor-pointer transition flex gap-3 items-start ${seladdress === index
-                                        ? 'border-teal-500 bg-teal-50'
-                                        : 'border-gray-200 hover:border-teal-500'
-                                        }`}
-                                >
-
-                                    <input
-                                        type="radio"
-                                        checked={seladdress === index}
-                                        onChange={() => setSeladdress(index)}
-                                        className="mt-1 accent-teal-500"
-                                    />
-
-                                    <div>
-                                        <h3 className="font-semibold text-gray-800">
-                                            {addr.fullName}
-                                        </h3>
-
-                                        <p className="text-gray-600 mt-1">
-                                            {addr.addressLine}, {addr.city}, {addr.state}
-                                        </p>
-
-                                        <p className="text-gray-600">
-                                            {addr.pincode} | {addr.mobile}
-                                        </p>
+                        {addresses.length === 0 ? (
+                            <div className="text-center py-8 text-gray-400">
+                                <p className="mb-3 text-sm">No addresses saved yet.</p>
+                                <Link href="/profile" className="text-[#01A49E] font-semibold hover:underline text-sm">
+                                    Go to Profile to add address &rarr;
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {addresses.map((addr, index) => (
+                                    <div key={index} onClick={() => setSeladdress(index)}
+                                        className={`border rounded-xl p-4 cursor-pointer transition flex gap-3 items-start text-sm
+                                            ${seladdress === index ? 'border-[#01A49E] bg-teal-50' : 'border-gray-200 hover:border-[#01A49E]'}`}>
+                                        <input type="radio" checked={seladdress === index}
+                                            onChange={() => setSeladdress(index)}
+                                            className="mt-1 accent-teal-500 shrink-0" />
+                                        <div>
+                                            <h3 className="font-bold text-gray-800">{addr.fullName}</h3>
+                                            <p className="text-gray-500 mt-0.5">{addr.addressLine}, {addr.city}, {addr.state}</p>
+                                            <p className="text-gray-400 text-xs mt-0.5">{addr.pincode} &middot; {addr.mobile}</p>
+                                        </div>
                                     </div>
-
-                                </div>
-                            ))}
-
-                        </div>
-
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* PAYMENT METHOD */}
-                    <div className="bg-white p-5 rounded-2xl shadow">
-
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-5">
-                            Payment Method
-                        </h2>
-
-                        <div className="space-y-4">
-
-                            <label className="flex items-center gap-3 border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-teal-500 transition">
-
-                                <input
-                                    type="radio"
-                                    checked={paymentMethod === 'cod'}
-                                    onChange={() => setPaymentMethod('cod')}
-                                />
-
-                                <span className="text-gray-700 font-medium">
-                                    Cash on Delivery
-                                </span>
-
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                        <h2 className="text-base sm:text-lg font-black text-gray-800 mb-4">Payment Method</h2>
+                        <div className="space-y-3">
+                            <label className="flex items-center gap-3 border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-[#01A49E] transition text-sm">
+                                <input type="radio" name="payment" checked={paymentMethod === 'cod'}
+                                    onChange={() => setPaymentMethod('cod')} className="accent-teal-500" />
+                                <span className="text-gray-700 font-medium">Cash on Delivery</span>
                             </label>
-
-                            <label className="flex items-center gap-3 border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-teal-500 transition">
-
-                                <input
-                                    type="radio"
-                                    checked={paymentMethod === 'online'}
-                                    onChange={() => setPaymentMethod('online')}
-                                />
-
-                                <span className="text-gray-700 font-medium">
-                                    Online Payment (UPI / Card / Net Banking)
-                                </span>
-
+                            <label className="flex items-center gap-3 border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-[#01A49E] transition text-sm">
+                                <input type="radio" name="payment" checked={paymentMethod === 'online'}
+                                    onChange={() => setPaymentMethod('online')} className="accent-teal-500" />
+                                <span className="text-gray-700 font-medium">Online Payment (UPI / Card / Net Banking)</span>
                             </label>
-
                         </div>
-
                     </div>
-
                 </div>
 
-                {/* RIGHT SECTION */}
-                <div className="bg-white p-5 rounded-2xl shadow h-fit">
+                {/* RIGHT — Order Summary */}
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 lg:sticky lg:top-24">
+                    <h2 className="text-base sm:text-lg font-black text-gray-800 mb-4">Order Summary</h2>
 
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-5">
-                        Order Summary
-                    </h2>
-
-                    <div className="space-y-3">
-
+                    <div className="space-y-2 text-sm">
                         <div className="flex justify-between text-gray-600">
                             <span>Original Total</span>
-                            <span>₹{cart.original_total}</span>
+                            <span>{formatRupees(cart.original_total)}</span>
                         </div>
-
                         <div className="flex justify-between text-green-600">
                             <span>You Save</span>
-                            <span>
-                                ₹{cart.original_total - cart.final_total}
-                            </span>
+                            <span>{formatRupees((cart.original_total - cart.final_total) || 0)}</span>
                         </div>
-
+                        <div className="flex justify-between text-gray-400">
+                            <span>Shipping</span>
+                            <span className="text-green-600">Free</span>
+                        </div>
                     </div>
 
-                    <div className="border-t my-5"></div>
+                    <div className="border-t border-gray-100 my-4" />
 
-                    <div className="flex justify-between text-xl font-semibold text-gray-800">
-
+                    <div className="flex justify-between font-black text-gray-900">
                         <span>Total</span>
-
-                        <span>₹{cart.final_total}</span>
-
+                        <span className="text-[#01A49E]">{formatRupees(cart.final_total)}</span>
                     </div>
 
-                    <button
-                        onClick={handleOrder}
-                        className="w-full mt-6 bg-teal-500 hover:bg-teal-600 text-white py-3 rounded-xl font-semibold transition"
-                    >
-                        Order Now
+                    {/* Debug info — only visible in dev, helps diagnose network issues */}
+                    {process.env.NODE_ENV === 'development' && (
+                        <p className="text-[9px] text-gray-300 mt-2 break-all">
+                            API: {process.env.NEXT_PUBLIC_API_BASE_URL}
+                        </p>
+                    )}
+
+                    <button onClick={handleOrder}
+                        disabled={loading || addresses.length === 0}
+                        className="w-full mt-5 bg-[#01A49E] hover:bg-[#01857f] disabled:bg-teal-300 disabled:cursor-not-allowed text-white py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-2 text-sm">
+                        {loading
+                            ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing...</>
+                            : 'Place Order'}
                     </button>
 
+                    {addresses.length === 0 && (
+                        <p className="text-xs text-red-400 text-center mt-2">Add a delivery address to continue</p>
+                    )}
                 </div>
-
             </div>
-
         </div>
     );
 }

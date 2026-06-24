@@ -1,5 +1,18 @@
 import { client } from './Helper'
-import { addtocart, qtyChange, emptycart } from '@/redux/features/CartSlice'
+import { addtocart, qtyChange, emptycart, removeItem } from '@/redux/features/CartSlice'
+
+// ── Remove a single item completely from cart ─────────────────────────────────
+// Used when user explicitly clicks "Remove" — removes regardless of qty
+export function removeFromCartWithSync(dispatch, productId) {
+    dispatch(removeItem({ id: productId }))
+    client.delete('cart/remove', {
+        data: { productId }
+    }).catch(err => {
+        if (err?.response?.status !== 401) {
+            console.warn('Cart remove sync failed:', err?.response?.data?.message || err.message)
+        }
+    })
+}
 
 // ── Add to cart ───────────────────────────────────────────────────────────────
 // 1. Redux dispatch (instant UI update)

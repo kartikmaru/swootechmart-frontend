@@ -4,7 +4,7 @@ import { FaSearch, FaChevronDown } from "react-icons/fa";
 
 export default function SearchBar() {
     return (
-        <div className="w-full bg-teal-600 rounded-xl px-4 py-3 flex items-center justify-between">
+        <div className="w-full bg-teal-600 rounded-xl gap-5 px-4 py-3 flex items-center justify-between">
 
             {/* Left Section */}
             <div className="flex items-center gap-3 bg-white rounded-full px-3 py-2 w-[450px]">

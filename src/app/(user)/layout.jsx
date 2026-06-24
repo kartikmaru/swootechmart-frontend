@@ -36,7 +36,8 @@ export default async function RootLayout({ children }) {
         <ReduxProvider>
           <Header user={user} />
           <main className="flex-1 w-full">
-            <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            {/* container-app: 1400px max, scales gracefully on 3xl/4xl via globals.css */}
+            <div className="container-app py-4 sm:py-6">
               {children}
             </div>
           </main>
