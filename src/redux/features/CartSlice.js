@@ -81,9 +81,37 @@ export const cartSlice = createSlice({
             if (state.original_total < 0) state.original_total = 0
             if (state.final_total    < 0) state.final_total    = 0
             localStorage.setItem("cart", JSON.stringify(state))
-        }
+        },
+
+        // resetCart — call on LOGOUT and before LOGIN/REGISTER
+        // Wipes Redux state + all cart localStorage keys
+        // Prevents previous user's cart leaking to the next user
+        resetCart: (state) => {
+            state.items          = []
+            state.original_total = 0
+            state.final_total    = 0
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('cart')
+            }
+        },
+
+        // loadUserCart — call AFTER login/register, with items fetched from backend
+        // Resets first, then loads fresh — no stale data possible
+        loadUserCart: (state, { payload }) => {
+            state.items          = []
+            state.original_total = 0
+            state.final_total    = 0
+            if (payload && payload.length > 0) {
+                state.items          = payload
+                state.original_total = payload.reduce((sum, i) => sum + Number(i.original_price) * (i.qty || 1), 0)
+                state.final_total    = payload.reduce((sum, i) => sum + Number(i.final_price)    * (i.qty || 1), 0)
+            }
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('cart', JSON.stringify(state))
+            }
+        },
     },
 })
 
-export const { addtocart, emptycart, lstoCart, qtyChange, addRecentlyViewed, removeItem } = cartSlice.actions
+export const { addtocart, emptycart, lstoCart, qtyChange, addRecentlyViewed, removeItem, resetCart, loadUserCart } = cartSlice.actions
 export default cartSlice.reducer

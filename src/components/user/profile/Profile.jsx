@@ -12,6 +12,104 @@ import {
 } from 'react-icons/fi';
 import Link from 'next/link';
 
+// ── AddressForm — MUST be defined OUTSIDE Profile component ───────────────────
+// If defined inside, every Profile re-render creates a new function reference,
+// causing React to unmount/remount the form → input loses focus on every keystroke.
+// Keeping it here as a stable top-level component fixes the blur bug completely.
+function AddressForm({ onSave, loading }) {
+    const emptyForm = { fullName: '', mobile: '', pincode: '', addressLine: '', city: '', state: '' }
+    const [form, setForm] = useState(emptyForm)
+
+    // useCallback ensures handleChange reference is stable — no unnecessary re-renders
+    const handleChange = (e) => {
+        const { name, value } = e.target
+        setForm(prev => ({ ...prev, [name]: value }))
+    }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        await onSave(form)
+        setForm(emptyForm)   // reset only after successful save
+    }
+
+    return (
+        <div className="bg-teal-50 border border-teal-100 rounded-2xl p-5">
+            <h4 className="text-sm font-bold text-teal-700 mb-4 flex items-center gap-2">
+                <FiHome size={14} /> New Delivery Address
+            </h4>
+            <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Full Name</label>
+                        <input
+                            name="fullName"
+                            value={form.fullName}
+                            onChange={handleChange}
+                            type="text"
+                            placeholder="Enter full name"
+                            required
+                            autoComplete="off"
+                            className="w-full bg-white border border-gray-200 px-3.5 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-teal-400 text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Mobile</label>
+                        <input
+                            name="mobile"
+                            value={form.mobile}
+                            onChange={handleChange}
+                            type="text"
+                            placeholder="10-digit number"
+                            required
+                            autoComplete="off"
+                            className="w-full bg-white border border-gray-200 px-3.5 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-teal-400 text-sm"
+                        />
+                    </div>
+                </div>
+                <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-1">Address Line</label>
+                    <textarea
+                        name="addressLine"
+                        value={form.addressLine}
+                        onChange={handleChange}
+                        rows={2}
+                        placeholder="House no., street, area..."
+                        required
+                        className="w-full bg-white border border-gray-200 px-3.5 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-teal-400 text-sm resize-none"
+                    />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {[
+                        { name: 'city',    placeholder: 'City' },
+                        { name: 'state',   placeholder: 'State' },
+                        { name: 'pincode', placeholder: 'Pincode' },
+                    ].map(f => (
+                        <div key={f.name}>
+                            <label className="text-xs font-semibold text-gray-600 block mb-1 capitalize">{f.name}</label>
+                            <input
+                                name={f.name}
+                                value={form[f.name]}
+                                onChange={handleChange}
+                                type="text"
+                                placeholder={f.placeholder}
+                                required
+                                autoComplete="off"
+                                className="w-full bg-white border border-gray-200 px-3 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-teal-400 text-sm"
+                            />
+                        </div>
+                    ))}
+                </div>
+                <button type="submit" disabled={loading}
+                    className="flex items-center gap-2 bg-[#01A49E] hover:bg-[#01857f] text-white font-bold px-5 py-2.5 rounded-xl transition text-sm disabled:opacity-60">
+                    {loading
+                        ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</>
+                        : <><FiCheckCircle size={14} /> Save Address</>}
+                </button>
+            </form>
+        </div>
+    )
+}
+
 const NAV_ITEMS = [
     { id: 'dashboard', label: 'Dashboard', icon: FiGrid },
     { id: 'orders',    label: 'My Orders', icon: FiPackage },
@@ -36,9 +134,6 @@ export default function Profile({ user }) {
         promotionalOffers: false,
     })
 
-    const emptyForm = { fullName: '', mobile: '', pincode: '', addressLine: '', city: '', state: '' }
-    const [form, setForm] = useState(emptyForm)
-    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
     const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
 
     // Fetch order stats
@@ -62,20 +157,6 @@ export default function Profile({ user }) {
             notify('Address removed', true)
         } catch { notify('Failed to delete', false) }
         finally { setDeleteIndex(null) }
-    }
-
-    // Add Address
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        setSubmitLoading(true)
-        try {
-            const res = await client.post('User/addaddresses', form)
-            setAddresses(res.data.data)
-            setForm(emptyForm)
-            setShowForm(false)
-            notify('Address added!', true)
-        } catch { notify('Failed to add address', false) }
-        finally { setSubmitLoading(false) }
     }
 
     // Toggle notification setting
@@ -217,6 +298,9 @@ export default function Profile({ user }) {
     )
 
     // ── Addresses ─────────────────────────────────────────────────────────────
+    // AddressesContent renders AddressForm as a STABLE top-level component.
+    // If AddressForm were defined here inside render, every keystroke would
+    // cause Profile to re-render → new function ref → React unmounts form → focus lost.
     const AddressesContent = () => (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -233,49 +317,21 @@ export default function Profile({ user }) {
                 </button>
             </div>
 
+            {/* AddressForm is a STABLE top-level component — not re-created on each render */}
             {showForm && (
-                <div className="bg-teal-50 border border-teal-100 rounded-2xl p-5">
-                    <h4 className="text-sm font-bold text-teal-700 mb-4 flex items-center gap-2">
-                        <FiHome size={14} /> New Delivery Address
-                    </h4>
-                    <form onSubmit={handleSubmit} className="space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {[
-                                { name: 'fullName', label: 'Full Name', placeholder: 'Enter full name' },
-                                { name: 'mobile',   label: 'Mobile',    placeholder: '10-digit number' },
-                            ].map(f => (
-                                <div key={f.name}>
-                                    <label className="text-xs font-semibold text-gray-600 block mb-1">{f.label}</label>
-                                    <input name={f.name} value={form[f.name]} onChange={handleChange}
-                                        type="text" placeholder={f.placeholder} required
-                                        className="w-full bg-white border border-gray-200 px-3.5 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-teal-400 text-sm" />
-                                </div>
-                            ))}
-                        </div>
-                        <div>
-                            <label className="text-xs font-semibold text-gray-600 block mb-1">Address Line</label>
-                            <textarea name="addressLine" value={form.addressLine} onChange={handleChange}
-                                rows={2} placeholder="House no., street, area..." required
-                                className="w-full bg-white border border-gray-200 px-3.5 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-teal-400 text-sm resize-none" />
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            {[{ name: 'city', placeholder: 'City' }, { name: 'state', placeholder: 'State' }, { name: 'pincode', placeholder: 'Pincode' }].map(f => (
-                                <div key={f.name}>
-                                    <label className="text-xs font-semibold text-gray-600 block mb-1 capitalize">{f.name}</label>
-                                    <input name={f.name} value={form[f.name]} onChange={handleChange}
-                                        type="text" placeholder={f.placeholder} required
-                                        className="w-full bg-white border border-gray-200 px-3 py-2.5 rounded-xl outline-none focus:ring-2 focus:ring-teal-400 text-sm" />
-                                </div>
-                            ))}
-                        </div>
-                        <button type="submit" disabled={submitLoading}
-                            className="flex items-center gap-2 bg-[#01A49E] hover:bg-[#01857f] text-white font-bold px-5 py-2.5 rounded-xl transition text-sm disabled:opacity-60">
-                            {submitLoading
-                                ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</>
-                                : <><FiCheckCircle size={14} /> Save Address</>}
-                        </button>
-                    </form>
-                </div>
+                <AddressForm
+                    onSave={async (formData) => {
+                        setSubmitLoading(true)
+                        try {
+                            const res = await client.post('User/addaddresses', formData)
+                            setAddresses(res.data.data)
+                            setShowForm(false)
+                            notify('Address added!', true)
+                        } catch { notify('Failed to add address', false) }
+                        finally { setSubmitLoading(false) }
+                    }}
+                    loading={submitLoading}
+                />
             )}
 
             {addresses.length === 0 && !showForm && (

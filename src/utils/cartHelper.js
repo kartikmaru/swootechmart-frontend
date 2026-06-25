@@ -1,5 +1,56 @@
 import { client } from './Helper'
-import { addtocart, qtyChange, emptycart, removeItem } from '@/redux/features/CartSlice'
+import { addtocart, qtyChange, emptycart, removeItem, resetCart, loadUserCart } from '@/redux/features/CartSlice'
+
+// ── logoutClearCart — call on every logout ────────────────────────────────────
+// 1. Clears Redux cart state + localStorage immediately
+// 2. Calls backend to clear DB cart (silently — 401 is expected post-logout)
+export async function logoutClearCart(dispatch) {
+    dispatch(resetCart())
+    try {
+        await client.delete('cart/clear')
+    } catch (_) { /* 401 expected — silently ignore */ }
+}
+
+// ── syncAndLoadCart — call after login/register ───────────────────────────────
+// 1. Clears any previous user's localStorage cart
+// 2. Fetches this user's cart from backend
+// 3. Loads it into Redux + localStorage
+export async function syncAndLoadCart(dispatch) {
+    // Clear previous user's local cart first
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('cart')
+    }
+    try {
+        // Send empty items — we only want to GET, not merge old local data
+        const cartRes = await client.post('cart/sync', {
+            localCart: JSON.stringify({ items: [] })
+        })
+        const cartData = cartRes.data?.cart
+        const baseUrl  = cartRes.data?.imageBaseUrl || ''
+
+        const items = (cartData?.items || [])
+            .filter(item => item?.productId)
+            .map(item => {
+                const p = item.productId
+                return {
+                    id:             p._id,
+                    name:           p.name,
+                    original_price: p.original_price,
+                    final_price:    p.final_price,
+                    discount:       p.discount,
+                    price:          p.price,
+                    stock:          p.stock,
+                    qty:            item.qty,
+                    thumbnail:      baseUrl + p.thumbnail,
+                }
+            })
+
+        dispatch(loadUserCart(items))
+    } catch (_) {
+        // Non-critical — user can still shop with empty cart
+        dispatch(loadUserCart([]))
+    }
+}
 
 // ── Remove a single item completely from cart ─────────────────────────────────
 // Used when user explicitly clicks "Remove" — removes regardless of qty

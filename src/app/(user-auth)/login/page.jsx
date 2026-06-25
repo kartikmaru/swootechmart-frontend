@@ -3,86 +3,55 @@
 import { client, notify } from '@/utils/Helper'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi'
+import { logoutClearCart, syncAndLoadCart } from '@/utils/cartHelper'
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [item, setItem] = useState([])
-  const [loading, setLoading] = useState(false)
+  const router   = useRouter()
+  const dispatch = useDispatch()
+  const [loading,  setLoading]  = useState(false)
   const [showPass, setShowPass] = useState(false)
-
-  useEffect(() => {
-    try {
-      const cartItems = JSON.parse(localStorage.getItem("cart")) || {}
-      setItem(cartItems.items || [])
-    } catch (error) {
-      console.log(error)
-    }
-  }, [])
 
   const submitHandler = async (e) => {
     e.preventDefault()
     setLoading(true)
 
     const data = {
-      email: e.target.email.value,
-      password: e.target.password.value
+      email:    e.target.email.value,
+      password: e.target.password.value,
     }
 
     try {
-      const res = await client.post("/User/login", data)
+      const res = await client.post('/User/login', data)
 
       if (res.data.success) {
-        notify("Logged in successfully", true)
+        notify('Logged in successfully', true)
 
-        // Save token to localStorage — cross-origin cookie is blocked by browser,
-        // localStorage token is picked up by axios interceptor as Authorization header fallback
+        // Step 1: Clear previous user's cart IMMEDIATELY before loading new user's data
+        await logoutClearCart(dispatch)
+
+        // Step 2: Save auth token
         if (res.data.data?.token) {
-          const token = res.data.data.token
+          const token     = res.data.data.token
+          const isHttps   = typeof window !== 'undefined' && window.location.protocol === 'https:'
+          const secureStr = isHttps ? '; Secure' : ''
+          const maxAge    = 30 * 24 * 60 * 60
           localStorage.setItem('token', token)
-
-          // Also set a non-httpOnly cookie so Next.js middleware can detect auth state
-          // for protected route redirects (/checkout, /profile, /orders)
-          const maxAge = 30 * 24 * 60 * 60  // 30 days in seconds
-          document.cookie = `auth_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`
+          document.cookie = `auth_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax${secureStr}`
         }
 
-        // Cart sync — silently, don't block redirect on failure
-        try {
-          const cartRes = await client.post("cart/sync", {
-            localCart: JSON.stringify({ items: item })
-          })
-          const cartData = cartRes.data?.cart
+        // Step 3: Fetch and load THIS user's cart from backend
+        await syncAndLoadCart(dispatch)
 
-          if (cartData?.items?.length > 0) {
-            let final_total = 0
-            let original_total = 0
-
-            const items = cartData.items
-              .filter((item) => item?.productId)
-              .map((item) => {
-                const { name, _id, original_price, final_price, discount, price, thumbnail, stock } = item.productId
-                final_total += final_price * item.qty
-                original_total += original_price * item.qty
-                return {
-                  id: _id, name, original_price, final_price,
-                  discount, price, stock, qty: item.qty,
-                  thumbnail: cartRes.data.imageBaseUrl + thumbnail,
-                }
-              })
-
-            localStorage.setItem("cart", JSON.stringify({ final_total, items, original_total }))
-          }
-        } catch (cartErr) {
-          console.log("Cart sync failed (non-critical):", cartErr)
-        }
-
-        // Always redirect to home after login
-        router.push("/")
+        // Step 4: Redirect
+        const params   = new URLSearchParams(window.location.search)
+        const redirect = params.get('redirect')
+        router.push(redirect || '/')
       }
     } catch (error) {
-      const message = error?.response?.data?.msg || "Login failed. Please try again."
+      const message = error?.response?.data?.msg || 'Login failed. Please try again.'
       notify(message, false)
     } finally {
       setLoading(false)
