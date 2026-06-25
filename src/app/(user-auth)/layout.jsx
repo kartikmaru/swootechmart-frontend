@@ -1,51 +1,36 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import "../globals.css"
-import "react-toastify/dist/ReactToastify.css";
-import { ToastContainer } from 'react-toastify';
-import ReduxProvider from "@/redux/ReduxProvider";
+// (user-auth)/layout.jsx
+// Wraps login, register, verify-otp pages
+// Provides Redux store + Toast notifications for auth pages
+//
+// Uses a split pattern:
+//   - Outer (this file): Server Component — renders <html>/<body> + font vars
+//   - Inner (AuthClientWrapper): Client Component — renders ReduxProvider + Toast
+//
+// This avoids the 'use client' + metadata conflict AND ensures Redux is available
 
-const geistSans = Geist({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
-});
+import { Geist, Geist_Mono } from 'next/font/google'
+import '../globals.css'
+import AuthClientWrapper from './AuthClientWrapper'
 
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
-});
+const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
+const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
 
 export const metadata = {
-    title: "SwooTechMart",
-    description: "Your trusted destination for premium electronics",
-};
+    title: 'SwooTechMart — Sign In',
+    description: 'Login or create your SwooTechMart account',
+}
 
-export default function RootLayout({ children }) {
+export default function AuthLayout({ children }) {
     return (
         <html
             lang="en"
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
         >
             <body className="min-h-full bg-gray-50">
-                {/* ReduxProvider MUST wrap children so useDispatch/useSelector work in login & register */}
-                <ReduxProvider>
-                    <ToastContainer
-                        position="top-right"
-                        autoClose={2000}
-                        hideProgressBar={false}
-                        newestOnTop={false}
-                        closeOnClick={true}
-                        rtl={false}
-                        pauseOnFocusLoss
-                        draggable
-                        pauseOnHover
-                        theme="dark"
-                        icon={true}
-                    />
-                    <div className="min-h-screen flex flex-col">
-                        {children}
-                    </div>
-                </ReduxProvider>
+                <AuthClientWrapper>
+                    {children}
+                </AuthClientWrapper>
             </body>
         </html>
-    );
+    )
 }
