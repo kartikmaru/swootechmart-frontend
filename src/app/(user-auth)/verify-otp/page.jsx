@@ -3,6 +3,9 @@
 import { Suspense, useState, useRef } from 'react'
 import { client, notify } from '@/utils/Helper'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useDispatch } from 'react-redux'
+import { syncAndLoadCart } from '@/utils/cartHelper';
+
 
 function VerifyOtpContent() {
   const [otp, setOtp] = useState(Array(6).fill(''))
@@ -11,6 +14,7 @@ function VerifyOtpContent() {
   const searchParams = useSearchParams()
   const email = searchParams.get("email")
   const [loading, setLoading] = useState(false)
+  const dispatch = useDispatch();
 
   const handleChange = (value, index) => {
     if (!/^[0-9]?$/.test(value)) return
@@ -34,9 +38,22 @@ function VerifyOtpContent() {
       otp: finalOtp,
       email: email
     })
-      .then((res) => {
-        notify("Email Verified Successfully", res.data.success)
-        router.push("/login")
+      .then(async (res) => {
+        notify("Email Verified Successfully", true)
+
+        // Save token for Authorization header fallback
+        if (res.data.data?.token) {
+          localStorage.setItem("token", res.data.data.token)
+        }
+
+        // Load user's cart
+        await syncAndLoadCart(dispatch)
+
+        // Refresh server components
+        router.refresh()
+
+        // Go directly to home
+        router.replace("/")
       })
       .catch((error) => {
         const message = error?.response?.data?.msg
