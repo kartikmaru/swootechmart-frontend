@@ -27,19 +27,22 @@ export async function logoutClearCart(dispatch) {
 // 2. Fetches this user's cart from backend
 // 3. Loads it into Redux + localStorage
 export async function syncAndLoadCart(dispatch) {
-    // Clear previous user's local cart first
     if (typeof window !== 'undefined') {
         localStorage.removeItem('cart')
     }
     try {
-        // Send empty items — we only want to GET, not merge old local data
         const cartRes = await client.post('cart/sync', {
             localCart: JSON.stringify({ items: [] })
         })
+
+        // ✅ Backend empty-cart path returns `cart` as items array directly
         const cartData = cartRes.data?.cart
         const baseUrl  = cartRes.data?.imageBaseUrl || ''
 
-        const items = (cartData?.items || [])
+        // Handle BOTH cases: array directly OR object with .items
+        const rawItems = Array.isArray(cartData) ? cartData : (cartData?.items || [])
+
+        const items = rawItems
             .filter(item => item?.productId)
             .map(item => {
                 const p = item.productId
@@ -58,7 +61,6 @@ export async function syncAndLoadCart(dispatch) {
 
         dispatch(loadUserCart(items))
     } catch (_) {
-        // Non-critical — user can still shop with empty cart
         dispatch(loadUserCart([]))
     }
 }
