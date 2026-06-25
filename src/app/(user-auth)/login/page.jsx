@@ -8,9 +8,6 @@ import { useDispatch } from 'react-redux'
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi'
 import { logoutClearCart, syncAndLoadCart } from '@/utils/cartHelper'
 
-// Prevents static prerendering at build time — this page uses Redux + browser APIs
-export const dynamic   = 'force-dynamic'
-export const revalidate = 0
 
 export default function LoginPage() {
   const router   = useRouter()
