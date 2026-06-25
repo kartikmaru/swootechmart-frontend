@@ -11,11 +11,15 @@ import { addtocart, qtyChange, emptycart, removeItem, resetCart, loadUserCart } 
 // ── logoutClearCart — call on every logout ────────────────────────────────────
 // 1. Clears Redux cart state + localStorage immediately
 // 2. Calls backend to clear DB cart (silently — 401 is expected post-logout)
+// ── logoutClearCart — call on every logout ────────────────────────────────────
+// ONLY clears local Redux state + localStorage
+// Backend cart is PRESERVED so it loads back on next login
 export async function logoutClearCart(dispatch) {
     dispatch(resetCart())
-    try {
-        await client.delete('cart/clear')
-    } catch (_) { /* 401 expected — silently ignore */ }
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('cart')
+    }
+    // ❌ NO backend call — cart must persist in DB for next login
 }
 
 // ── syncAndLoadCart — call after login/register ───────────────────────────────
