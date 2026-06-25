@@ -33,7 +33,13 @@ export default function Header({ user }) {
   const [loggingOut, setLoggingOut] = useState(false)
   const dropRef = useRef(null)
 
-  useEffect(() => { dispatcher(lstoCart()) }, [])
+  useEffect(() => {
+    // Only load cart from localStorage when user is authenticated
+    // Prevents a previous user's cart showing for a new/guest user
+    if (user) {
+      dispatcher(lstoCart())
+    }
+  }, [user])
 
   useEffect(() => {
     setMenuOpen(false)
@@ -60,11 +66,14 @@ export default function Header({ user }) {
     try {
       await client.post('User/logout')
       localStorage.removeItem('token')
+      // Clear both variants of auth_token cookie (with and without Secure flag)
       document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax'
+      document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax; Secure'
       notify('Logged out successfully', true)
       setDropOpen(false)
-      router.push('/')
-      router.refresh()
+      // Full page navigation — forces server components to re-run getMe()
+      // so Header shows "Login" and user data is cleared from all Server Components
+      window.location.href = '/'
     } catch {
       notify('Logout failed', false)
     } finally {

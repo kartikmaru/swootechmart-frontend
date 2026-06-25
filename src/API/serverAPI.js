@@ -1,46 +1,57 @@
 import { client } from "@/utils/Helper";
 import { cookies } from "next/headers";
 
+// ── getMe — Server-side user fetch ────────────────────────────────────────────
+//
+// COOKIE STRATEGY IN CROSS-ORIGIN DEPLOYMENT (Vercel + Render):
+//
+//   'jwt'        → httpOnly cookie set by Render backend on *.onrender.com
+//                  NOT accessible here (Vercel domain) — only works localhost
+//
+//   'auth_token' → non-httpOnly cookie set by login/verify-otp page on Vercel
+//                  domain via document.cookie → ACCESSIBLE HERE ✓
+//                  This is the token we use for server-side API calls
+//
+// The login page sets: document.cookie = `auth_token=${token}; path=/; ...`
+// That cookie lives on the Vercel domain → Next.js cookies() can read it
+
 async function getMe() {
     try {
-        // In production, frontend (Vercel) and backend (Render) are on different domains.
-        // The httpOnly cookie set by the backend lives on the backend domain — Next.js
-        // server-side cookies() can only see cookies on the frontend domain, so in
-        // cross-origin deployments the cookie will always be missing here.
-        // We read it anyway (it works on localhost), then fall back to Authorization header.
-
         const cookieStore = await cookies()
-        const cookieToken = cookieStore.get("jwt")?.value ?? null
 
-        const headers = {}
+        // Try 'auth_token' first — this is set by the login page on the frontend domain
+        // and IS accessible in server components on the same domain (Vercel)
+        const authToken  = cookieStore.get("auth_token")?.value ?? null
 
-        if (cookieToken) {
-            // Localhost / same-origin: use cookie token directly
-            headers['Authorization'] = `Bearer ${cookieToken}`
-        }
-        // Note: for cross-origin production, the Authorization header will be set
-        // automatically by the axios client interceptor via localStorage — but since
-        // getMe() runs server-side (Next.js RSC / layout), we cannot access localStorage here.
-        // The production auth flow therefore relies on the token passed via the client-side
-        // axios interceptor for client components, and the getMe() server call returns null
-        // for unauthenticated users in production until a session cookie is available.
+        // Try 'jwt' as fallback — works on localhost where frontend + backend are same origin
+        const jwtToken   = cookieStore.get("jwt")?.value ?? null
 
-        if (!cookieToken) {
-            // No token available server-side — client components will handle auth via axios interceptor
+        const token = authToken || jwtToken
+
+        if (!token) {
+            // No token found — user is not logged in or cookie has expired
             return { user: null }
         }
 
         const response = await client.get("User/get", {
-            headers
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            // withCredentials already set on client instance, but explicit here
+            withCredentials: true,
         })
 
         if (!response.data.success) {
-            throw new Error(response.data.msg || "API FAIL")
+            return { user: null }
         }
 
         return response.data
 
     } catch (error) {
+        // Log non-401 errors (401 just means not logged in — expected)
+        if (error?.response?.status !== 401) {
+            console.error('[serverAPI/getMe]', error?.response?.status, error?.message)
+        }
         return { user: null }
     }
 }

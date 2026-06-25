@@ -35,21 +35,22 @@ export default function LoginPage() {
 
         // Step 2: Save auth token
         if (res.data.data?.token) {
-          const token = res.data.data.token
-          const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:'
+          const token     = res.data.data.token
+          const isHttps   = typeof window !== 'undefined' && window.location.protocol === 'https:'
           const secureStr = isHttps ? '; Secure' : ''
-          const maxAge = 30 * 24 * 60 * 60
+          const maxAge    = 30 * 24 * 60 * 60
           localStorage.setItem('token', token)
+          // auth_token cookie is on the Vercel domain — readable by server-side getMe()
           document.cookie = `auth_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax${secureStr}`
         }
 
         // Step 3: Fetch and load THIS user's cart from backend
         await syncAndLoadCart(dispatch)
 
-        // Step 4: Redirect
-        const params = new URLSearchParams(window.location.search)
+        // Step 4: Full page navigation — forces server components to re-run getMe()
+        // This ensures the Header and profile page see the logged-in user immediately
+        const params   = new URLSearchParams(window.location.search)
         const redirect = params.get('redirect')
-        router.push(redirect || '/')
         window.location.href = redirect || '/'
       }
     } catch (error) {

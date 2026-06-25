@@ -1,6 +1,13 @@
 import { client } from './Helper'
 import { addtocart, qtyChange, emptycart, removeItem, resetCart, loadUserCart } from '@/redux/features/CartSlice'
 
+// ── IMPORTANT: Store consistency ──────────────────────────────────────────────
+// All functions here receive `dispatch` as a parameter from the calling component.
+// That dispatch comes from useDispatch() which hooks into ReduxProvider's store.
+// We DO NOT import store.js directly — that would create a second store instance.
+// This ensures cart state is consistent across the entire app.
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ── logoutClearCart — call on every logout ────────────────────────────────────
 // 1. Clears Redux cart state + localStorage immediately
 // 2. Calls backend to clear DB cart (silently — 401 is expected post-logout)
