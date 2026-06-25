@@ -10,9 +10,9 @@ import { logoutClearCart, syncAndLoadCart } from '@/utils/cartHelper'
 
 
 export default function LoginPage() {
-  const router   = useRouter()
+  const router = useRouter()
   const dispatch = useDispatch()
-  const [loading,  setLoading]  = useState(false)
+  const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
 
   const submitHandler = async (e) => {
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setLoading(true)
 
     const data = {
-      email:    e.target.email.value,
+      email: e.target.email.value,
       password: e.target.password.value,
     }
 
@@ -35,10 +35,10 @@ export default function LoginPage() {
 
         // Step 2: Save auth token
         if (res.data.data?.token) {
-          const token     = res.data.data.token
-          const isHttps   = typeof window !== 'undefined' && window.location.protocol === 'https:'
+          const token = res.data.data.token
+          const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:'
           const secureStr = isHttps ? '; Secure' : ''
-          const maxAge    = 30 * 24 * 60 * 60
+          const maxAge = 30 * 24 * 60 * 60
           localStorage.setItem('token', token)
           document.cookie = `auth_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax${secureStr}`
         }
@@ -47,9 +47,10 @@ export default function LoginPage() {
         await syncAndLoadCart(dispatch)
 
         // Step 4: Redirect
-        const params   = new URLSearchParams(window.location.search)
+        const params = new URLSearchParams(window.location.search)
         const redirect = params.get('redirect')
         router.push(redirect || '/')
+        window.location.href = redirect || '/'
       }
     } catch (error) {
       const message = error?.response?.data?.msg || 'Login failed. Please try again.'
