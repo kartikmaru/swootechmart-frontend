@@ -50,10 +50,10 @@ function VerifyOtpContent() {
         await syncAndLoadCart(dispatch)
 
         // Refresh server components
-        router.refresh()
+        // router.refresh()
 
         // Go directly to home
-        router.replace("/")
+        // router.replace("/")
       })
       .catch((error) => {
         const message = error?.response?.data?.msg
