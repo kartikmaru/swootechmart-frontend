@@ -45,10 +45,11 @@ export default function AdminHeader() {
             await client.post('User/logout')
         } catch (_) {}
         localStorage.removeItem('token')
-        // Clear the non-httpOnly auth_token cookie set at login
         document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax'
+        document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax; Secure'
         notify('Logged out successfully', true)
-        router.push('/login')
+        // Full page reload so server re-runs auth checks
+        window.location.href = '/login'
     }
 
     // Today's date
