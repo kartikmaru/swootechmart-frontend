@@ -9,9 +9,105 @@ import {
 
 export const dynamic = 'force-dynamic'
 
+// ── AdminPasswordField — module-level, never remounts ────────────────────────
+function AdminPasswordField({ name, label, show, onToggleShow, value, onChange }) {
+    return (
+        <div>
+            <label className="text-xs font-semibold text-gray-600 block mb-1">{label}</label>
+            <div className="relative">
+                <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                    type={show ? 'text' : 'password'}
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    required
+                    autoComplete="new-password"
+                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50 focus:bg-white transition"
+                    placeholder="••••••••"
+                />
+                <button type="button" onClick={onToggleShow}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
+                    {show ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                </button>
+            </div>
+        </div>
+    )
+}
+
+// ── AdminSecurityForm — module-level, stable state ────────────────────────────
+function AdminSecurityForm() {
+    const [fields, setFields] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    const [show,   setShow]   = useState({ current: false, newP: false, confirm: false })
+    const [saving, setSaving] = useState(false)
+
+    const handleChange = useCallback((e) => {
+        const { name, value } = e.target
+        setFields(prev => ({ ...prev, [name]: value }))
+    }, [])
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        if (fields.newPassword.length < 6) { notify('New password must be at least 6 characters', false); return }
+        if (fields.newPassword !== fields.confirmPassword) { notify('Passwords do not match', false); return }
+        setSaving(true)
+        try {
+            await client.patch('User/change-password', {
+                currentPassword: fields.currentPassword,
+                newPassword:     fields.newPassword,
+                confirmPassword: fields.confirmPassword,
+            })
+            notify('Password changed successfully ✓', true)
+            setFields({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        } catch (err) {
+            notify(err?.response?.data?.msg || 'Failed to change password', false)
+        } finally { setSaving(false) }
+    }
+
+    return (
+        <div className="space-y-5">
+            <div>
+                <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
+                    <FiKey size={15} className="text-orange-500" /> Change Password
+                </h3>
+                <p className="text-sm text-gray-500 mt-0.5">Update your admin account password</p>
+            </div>
+            <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm max-w-sm">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <AdminPasswordField
+                        name="currentPassword" label="Current Password"
+                        show={show.current} onToggleShow={() => setShow(s => ({ ...s, current: !s.current }))}
+                        value={fields.currentPassword} onChange={handleChange}
+                    />
+                    <AdminPasswordField
+                        name="newPassword" label="New Password (min 6 chars)"
+                        show={show.newP} onToggleShow={() => setShow(s => ({ ...s, newP: !s.newP }))}
+                        value={fields.newPassword} onChange={handleChange}
+                    />
+                    <AdminPasswordField
+                        name="confirmPassword" label="Confirm New Password"
+                        show={show.confirm} onToggleShow={() => setShow(s => ({ ...s, confirm: !s.confirm }))}
+                        value={fields.confirmPassword} onChange={handleChange}
+                    />
+                    <button type="submit" disabled={saving}
+                        className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-xl transition text-sm disabled:opacity-60 w-full justify-center">
+                        {saving ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</> : <><FiCheckCircle size={14} /> Update Password</>}
+                    </button>
+                </form>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 max-w-sm">
+                <FiShield size={15} className="text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 leading-relaxed">
+                    Admin passwords must be at least 6 characters. Use a strong unique password.
+                </p>
+            </div>
+        </div>
+    )
+}
+
 const TABS = [
-    { id: 'profile',  label: 'Profile',          icon: FiUser },
-    { id: 'security', label: 'Change Password',   icon: FiLock },
+    { id: 'profile',  label: 'Profile',        icon: FiUser },
+    { id: 'security', label: 'Change Password', icon: FiLock },
 ]
 
 export default function AdminProfilePage() {
@@ -50,99 +146,26 @@ export default function AdminProfilePage() {
         } finally { setSaving(false) }
     }
 
-    // ── Security Tab ──────────────────────────────────────────────────────────
-    const SecurityTab = () => {
-        const [fields, setFields] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
-        const [show,   setShow]   = useState({ current: false, newP: false, confirm: false })
-        const [saving, setSaving] = useState(false)
-
-        const handleChange = useCallback((e) => {
-            const { name, value } = e.target
-            setFields(prev => ({ ...prev, [name]: value }))
-        }, [])
-
-        const handleSubmit = async (e) => {
-            e.preventDefault()
-            if (fields.newPassword.length < 6) { notify('New password must be at least 6 characters', false); return }
-            if (fields.newPassword !== fields.confirmPassword) { notify('Passwords do not match', false); return }
-            setSaving(true)
-            try {
-                await client.patch('User/change-password', {
-                    currentPassword: fields.currentPassword,
-                    newPassword:     fields.newPassword,
-                    confirmPassword: fields.confirmPassword,
-                })
-                notify('Password changed successfully ✓', true)
-                setFields({ currentPassword: '', newPassword: '', confirmPassword: '' })
-            } catch (err) {
-                notify(err?.response?.data?.msg || 'Failed to change password', false)
-            } finally { setSaving(false) }
-        }
-
-        const Field = ({ name, label, showKey }) => (
-            <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">{label}</label>
-                <div className="relative">
-                    <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                    <input type={show[showKey] ? 'text' : 'password'} name={name} value={fields[name]}
-                        onChange={handleChange} required autoComplete="new-password"
-                        className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-gray-50 focus:bg-white transition"
-                        placeholder="••••••••" />
-                    <button type="button" onClick={() => setShow(s => ({ ...s, [showKey]: !s[showKey] }))}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
-                        {show[showKey] ? <FiEyeOff size={14} /> : <FiEye size={14} />}
-                    </button>
-                </div>
-            </div>
-        )
-
-        return (
-            <div className="space-y-5">
-                <div>
-                    <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
-                        <FiKey size={16} className="text-orange-500" /> Change Password
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-0.5">Update your admin account password</p>
-                </div>
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm max-w-sm">
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <Field name="currentPassword" label="Current Password"        showKey="current" />
-                        <Field name="newPassword"     label="New Password (min 6 chars)" showKey="newP" />
-                        <Field name="confirmPassword" label="Confirm New Password"    showKey="confirm" />
-                        <button type="submit" disabled={saving}
-                            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-xl transition text-sm disabled:opacity-60 w-full justify-center">
-                            {saving ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</> : <><FiCheckCircle size={14} /> Update Password</>}
-                        </button>
-                    </form>
-                </div>
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 max-w-sm">
-                    <FiShield size={15} className="text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-700 leading-relaxed">
-                        Admin passwords must be at least 6 characters. Use a strong unique password and never share it.
-                    </p>
-                </div>
-            </div>
-        )
-    }
+    // ── SecurityTab delegates to module-level AdminSecurityForm ─────────────
+    const SecurityTab = () => <AdminSecurityForm />
 
     return (
         <div className="max-w-2xl mx-auto space-y-5">
 
-            {/* ── Profile Header Card ───────────────────────────────────── */}
+            {/* ── Profile Header Card — NO overlap, clean layout ─────── */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                {/* Banner — enough height so avatar doesn't overlap content below */}
-                <div className="h-20 sm:h-24 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 relative">
+                {/* Banner */}
+                <div className="h-16 sm:h-20 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 relative">
                     <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
                 </div>
 
-                <div className="px-4 sm:px-6 pb-5">
-                    {/* Avatar row — margin-top pulls avatar up to overlap banner cleanly */}
-                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 -mt-8 sm:-mt-10 mb-4">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xl sm:text-2xl font-black shadow-lg border-4 border-white shrink-0">
+                <div className="px-4 sm:px-6 pt-0 pb-5">
+                    {/* Avatar + buttons row */}
+                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 -mt-7 sm:-mt-9 mb-4">
+                        <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xl font-black shadow-lg border-4 border-white shrink-0" style={{width: '60px', height: '60px'}}>
                             {initials}
                         </div>
-                        {/* Edit / Save buttons — pushed to right on sm+ */}
-                        <div className="flex gap-2 sm:mb-0">
+                        <div className="flex gap-2 pt-1">
                             {!editing ? (
                                 <button onClick={handleEdit}
                                     className="flex items-center gap-1.5 text-sm font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 sm:px-4 py-2 rounded-xl transition border border-orange-200">

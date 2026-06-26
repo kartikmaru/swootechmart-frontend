@@ -69,8 +69,108 @@ function AddressForm({ onSave, loading }) {
     )
 }
 
-// ── Nav items ─────────────────────────────────────────────────────────────────
-const NAV_ITEMS = [
+// ── PasswordField — module-level stable component ────────────────────────────
+// MUST be defined outside Profile and SecurityContent to prevent remount on re-render
+function PasswordField({ name, label, showKey, show, onToggleShow, value, onChange }) {
+    return (
+        <div>
+            <label className="text-xs font-semibold text-gray-600 block mb-1">{label}</label>
+            <div className="relative">
+                <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+                <input
+                    type={show ? 'text' : 'password'}
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    required
+                    autoComplete="new-password"
+                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-400 bg-gray-50 focus:bg-white transition"
+                    placeholder="••••••••"
+                />
+                <button type="button" onClick={onToggleShow}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
+                    {show ? <FiEyeOff size={15} /> : <FiEye size={15} />}
+                </button>
+            </div>
+        </div>
+    )
+}
+
+// ── SecurityForm — module-level stable component ──────────────────────────────
+// Also outside Profile to prevent state loss on re-render
+function SecurityForm() {
+    const [fields, setFields] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+    const [show,   setShow]   = useState({ current: false, newP: false, confirm: false })
+    const [saving, setSaving] = useState(false)
+
+    // stable handleChange — no re-render dependency
+    const handleChange = useCallback((e) => {
+        const { name, value } = e.target
+        setFields(prev => ({ ...prev, [name]: value }))
+    }, [])
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        if (fields.newPassword.length < 6) { notify('New password must be at least 6 characters', false); return }
+        if (fields.newPassword !== fields.confirmPassword) { notify('Passwords do not match', false); return }
+        setSaving(true)
+        try {
+            await client.patch('User/change-password', {
+                currentPassword: fields.currentPassword,
+                newPassword:     fields.newPassword,
+                confirmPassword: fields.confirmPassword,
+            })
+            notify('Password changed successfully ✓', true)
+            setFields({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        } catch (err) {
+            notify(err?.response?.data?.msg || 'Failed to change password', false)
+        } finally { setSaving(false) }
+    }
+
+    return (
+        <div className="space-y-5">
+            <div>
+                <h2 className="text-lg sm:text-xl font-black text-gray-900">Security</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Change your password to keep your account secure</p>
+            </div>
+            <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                <h3 className="text-sm font-black text-gray-700 mb-4 flex items-center gap-2">
+                    <FiLock size={15} className="text-teal-500" /> Change Password
+                </h3>
+                <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
+                    <PasswordField
+                        name="currentPassword" label="Current Password"
+                        showKey="current" show={show.current}
+                        onToggleShow={() => setShow(s => ({ ...s, current: !s.current }))}
+                        value={fields.currentPassword} onChange={handleChange}
+                    />
+                    <PasswordField
+                        name="newPassword" label="New Password (min 6 chars)"
+                        showKey="newP" show={show.newP}
+                        onToggleShow={() => setShow(s => ({ ...s, newP: !s.newP }))}
+                        value={fields.newPassword} onChange={handleChange}
+                    />
+                    <PasswordField
+                        name="confirmPassword" label="Confirm New Password"
+                        showKey="confirm" show={show.confirm}
+                        onToggleShow={() => setShow(s => ({ ...s, confirm: !s.confirm }))}
+                        value={fields.confirmPassword} onChange={handleChange}
+                    />
+                    <button type="submit" disabled={saving}
+                        className="flex items-center gap-2 bg-[#01A49E] hover:bg-[#01857f] text-white font-bold px-5 py-2.5 rounded-xl transition text-sm disabled:opacity-60">
+                        {saving ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</> : <><FiCheckCircle size={14} /> Update Password</>}
+                    </button>
+                </form>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                <FiShield size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 leading-relaxed">
+                    Use a strong unique password. Never share your credentials with anyone.
+                </p>
+            </div>
+        </div>
+    )
+}
     { id: 'dashboard', label: 'Dashboard', icon: FiGrid },
     { id: 'orders',    label: 'My Orders', icon: FiPackage },
     { id: 'addresses', label: 'Addresses', icon: FiMapPin },
@@ -246,88 +346,8 @@ export default function Profile({ user }) {
         </div>
     )
 
-    // ── Security ──────────────────────────────────────────────────────────────
-    const SecurityContent = () => {
-        const [fields,   setFields]   = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
-        const [show,     setShow]     = useState({ current: false, new: false, confirm: false })
-        const [saving,   setSaving]   = useState(false)
-
-        const handleChange = useCallback((e) => {
-            const { name, value } = e.target
-            setFields(prev => ({ ...prev, [name]: value }))
-        }, [])
-
-        const handleSubmit = async (e) => {
-            e.preventDefault()
-            if (fields.newPassword.length < 6) { notify('New password must be at least 6 characters', false); return }
-            if (fields.newPassword !== fields.confirmPassword) { notify('Passwords do not match', false); return }
-            setSaving(true)
-            try {
-                await client.patch('User/change-password', {
-                    currentPassword: fields.currentPassword,
-                    newPassword:     fields.newPassword,
-                    confirmPassword: fields.confirmPassword,
-                })
-                notify('Password changed successfully', true)
-                setFields({ currentPassword: '', newPassword: '', confirmPassword: '' })
-            } catch (err) {
-                notify(err?.response?.data?.msg || 'Failed to change password', false)
-            } finally { setSaving(false) }
-        }
-
-        const PasswordField = ({ name, label, showKey }) => (
-            <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">{label}</label>
-                <div className="relative">
-                    <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
-                    <input
-                        type={show[showKey] ? 'text' : 'password'}
-                        name={name}
-                        value={fields[name]}
-                        onChange={handleChange}
-                        required
-                        autoComplete="new-password"
-                        className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-teal-400 bg-gray-50 focus:bg-white transition"
-                        placeholder="••••••••"
-                    />
-                    <button type="button" onClick={() => setShow(s => ({ ...s, [showKey]: !s[showKey] }))}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition">
-                        {show[showKey] ? <FiEyeOff size={15} /> : <FiEye size={15} />}
-                    </button>
-                </div>
-            </div>
-        )
-
-        return (
-            <div className="space-y-5">
-                <div>
-                    <h2 className="text-lg sm:text-xl font-black text-gray-900">Security</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">Change your password to keep your account secure</p>
-                </div>
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                    <h3 className="text-sm font-black text-gray-700 mb-4 flex items-center gap-2">
-                        <FiLock size={15} className="text-teal-500" /> Change Password
-                    </h3>
-                    <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
-                        <PasswordField name="currentPassword" label="Current Password" showKey="current" />
-                        <PasswordField name="newPassword"     label="New Password (min 6 chars)" showKey="new" />
-                        <PasswordField name="confirmPassword" label="Confirm New Password" showKey="confirm" />
-                        <button type="submit" disabled={saving}
-                            className="flex items-center gap-2 bg-[#01A49E] hover:bg-[#01857f] text-white font-bold px-5 py-2.5 rounded-xl transition text-sm disabled:opacity-60">
-                            {saving ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</> : <><FiCheckCircle size={14} /> Update Password</>}
-                        </button>
-                    </form>
-                </div>
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-                    <FiShield size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-amber-700 leading-relaxed">
-                        Use a strong password with at least 8 characters including letters, numbers and symbols.
-                        Never share your password with anyone.
-                    </p>
-                </div>
-            </div>
-        )
-    }
+    // ── Security — delegates to module-level SecurityForm ────────────────────
+    const SecurityContent = () => <SecurityForm />
 
     // ── Settings ──────────────────────────────────────────────────────────────
     const SettingsContent = () => {
@@ -611,8 +631,8 @@ export default function Profile({ user }) {
     return (
         <div className="min-h-screen bg-gray-50 -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6">
 
-            {/* Hero — enough pb so layout card doesn't overlap title */}
-            <div className="bg-gradient-to-r from-[#01A49E] via-teal-500 to-emerald-500 pt-6 sm:pt-8 pb-16 sm:pb-20 px-4 relative overflow-hidden">
+            {/* Hero — pb provides space for the card below, no overlap */}
+            <div className="bg-gradient-to-r from-[#01A49E] via-teal-500 to-emerald-500 pt-6 sm:pt-8 pb-6 px-4 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
                 <div className="max-w-5xl mx-auto relative">
                     <p className="text-teal-100 text-xs font-semibold mb-1 uppercase tracking-widest">My Account</p>
@@ -620,8 +640,8 @@ export default function Profile({ user }) {
                 </div>
             </div>
 
-            {/* Main layout — negative margin pulls card up into gradient tail cleanly */}
-            <div className="container-app -mt-8 sm:-mt-10 pb-12 sm:pb-16">
+            {/* Main layout — positive margin, no overlap with hero */}
+            <div className="container-app mt-4 sm:mt-6 pb-12 sm:pb-16">
                 <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 items-start">
                     <Sidebar />
                     <div className="flex-1 min-w-0 w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5 lg:p-6 min-h-[380px]">
