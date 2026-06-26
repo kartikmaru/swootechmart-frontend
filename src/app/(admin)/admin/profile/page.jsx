@@ -38,7 +38,7 @@ function AdminPasswordField({ name, label, show, onToggleShow, value, onChange }
 // ── AdminSecurityForm — module-level, stable state ────────────────────────────
 function AdminSecurityForm() {
     const [fields, setFields] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    const [show,   setShow]   = useState({ current: false, newP: false, confirm: false })
+    const [show, setShow] = useState({ current: false, newP: false, confirm: false })
     const [saving, setSaving] = useState(false)
 
     const handleChange = useCallback((e) => {
@@ -54,7 +54,7 @@ function AdminSecurityForm() {
         try {
             await client.patch('User/change-password', {
                 currentPassword: fields.currentPassword,
-                newPassword:     fields.newPassword,
+                newPassword: fields.newPassword,
                 confirmPassword: fields.confirmPassword,
             })
             notify('Password changed successfully ✓', true)
@@ -106,16 +106,16 @@ function AdminSecurityForm() {
 }
 
 const TABS = [
-    { id: 'profile',  label: 'Profile',        icon: FiUser },
+    { id: 'profile', label: 'Profile', icon: FiUser },
     { id: 'security', label: 'Change Password', icon: FiLock },
 ]
 
 export default function AdminProfilePage() {
-    const adminUser  = useAdminUser()
+    const adminUser = useAdminUser()
     const [activeTab, setActiveTab] = useState('profile')
-    const [editing,   setEditing]   = useState(false)
-    const [saving,    setSaving]    = useState(false)
-    const [form,      setForm]      = useState({ name: '', mobile: '' })
+    const [editing, setEditing] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const [form, setForm] = useState({ name: '', mobile: '' })
 
     if (!adminUser) {
         return (
@@ -125,9 +125,9 @@ export default function AdminProfilePage() {
         )
     }
 
-    const initials    = adminUser.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'A'
+    const initials = adminUser.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'A'
     const displayRole = adminUser.role === 'superAdmin' ? 'Super Admin' : 'Admin'
-    const joinDate    = adminUser.createdAt
+    const joinDate = adminUser.createdAt
         ? new Date(adminUser.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
         : '—'
 
@@ -155,14 +155,14 @@ export default function AdminProfilePage() {
             {/* ── Profile Header Card — NO overlap, clean layout ─────── */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 {/* Banner */}
-                <div className="h-16 sm:h-20 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 relative">
+                <div className="h-24 sm:h-28 bg-gradient-to-r from-orange-400 via-orange-500 to-amber-500 relative">
                     <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
                 </div>
 
                 <div className="px-4 sm:px-6 pt-0 pb-5">
-                    {/* Avatar + buttons row */}
-                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 -mt-7 sm:-mt-9 mb-4">
-                        <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xl font-black shadow-lg border-4 border-white shrink-0" style={{width: '60px', height: '60px'}}>
+                    {/* Avatar + buttons row - ✅ margin theek karo */}
+                    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 -mt-8 sm:-mt-9 mb-4">
+                        <div className="w-[60px] h-[60px] rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xl font-black shadow-lg border-4 border-white shrink-0">
                             {initials}
                         </div>
                         <div className="flex gap-2 pt-1">
@@ -238,10 +238,10 @@ export default function AdminProfilePage() {
                         <div className="space-y-3">
                             <h3 className="text-sm font-black text-gray-500 uppercase tracking-wider mb-3">Account Details</h3>
                             {[
-                                { icon: <FiMail size={15} />,     label: 'Email Address',  value: adminUser.email,     color: 'bg-blue-50 text-blue-500' },
-                                { icon: <FiShield size={15} />,   label: 'Role',           value: displayRole,         color: 'bg-orange-50 text-orange-500' },
-                                { icon: <FiUser size={15} />,     label: 'Account Status', value: adminUser.isVerified ? 'Verified' : 'Unverified', color: adminUser.isVerified ? 'bg-green-50 text-green-500' : 'bg-yellow-50 text-yellow-500' },
-                                { icon: <FiCalendar size={15} />, label: 'Member Since',   value: joinDate,             color: 'bg-purple-50 text-purple-500' },
+                                { icon: <FiMail size={15} />, label: 'Email Address', value: adminUser.email, color: 'bg-blue-50 text-blue-500' },
+                                { icon: <FiShield size={15} />, label: 'Role', value: displayRole, color: 'bg-orange-50 text-orange-500' },
+                                { icon: <FiUser size={15} />, label: 'Account Status', value: adminUser.isVerified ? 'Verified' : 'Unverified', color: adminUser.isVerified ? 'bg-green-50 text-green-500' : 'bg-yellow-50 text-yellow-500' },
+                                { icon: <FiCalendar size={15} />, label: 'Member Since', value: joinDate, color: 'bg-purple-50 text-purple-500' },
                             ].map(({ icon, label, value, color }) => (
                                 <div key={label} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${color}`}>{icon}</div>
