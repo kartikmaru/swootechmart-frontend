@@ -54,7 +54,7 @@ export default function AdminGuard({ children }) {
 
     if (checking) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-50 z-50">
                 <div className="flex flex-col items-center gap-3">
                     <div className="w-10 h-10 border-4 border-orange-400 border-t-transparent rounded-full animate-spin" />
                     <p className="text-sm text-gray-500 font-medium">Verifying access...</p>
