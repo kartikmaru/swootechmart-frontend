@@ -39,21 +39,30 @@ function VerifyOtpContent() {
       email: email
     })
       .then(async (res) => {
-        notify("Email Verified Successfully", true)
+        notify("Email Verified Successfully", true);
 
-        // Save token for Authorization header fallback
         if (res.data.data?.token) {
-          localStorage.setItem("token", res.data.data.token)
+          const token = res.data.data.token;
+
+          // Authorization fallback
+          localStorage.setItem("token", token);
+
+          // Frontend cookie for getMe()
+          const isHttps =
+            typeof window !== "undefined" &&
+            window.location.protocol === "https:";
+
+          const secureStr = isHttps ? "; Secure" : "";
+          const maxAge = 30 * 24 * 60 * 60;
+
+          document.cookie =
+            `auth_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax${secureStr}`;
         }
 
-        // Load user's cart
-        await syncAndLoadCart(dispatch)
+        await syncAndLoadCart(dispatch);
 
-        // Refresh server components
-        // router.refresh()
-
-        // Go directly to home
-        // router.replace("/")
+        // Force server components to reload
+        window.location.href = "/";
       })
       .catch((error) => {
         const message = error?.response?.data?.msg
