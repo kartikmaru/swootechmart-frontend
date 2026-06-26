@@ -13,8 +13,6 @@ import {
 import Link from 'next/link';
 
 // ── AddressForm — top-level stable component ──────────────────────────────────
-// Defined OUTSIDE Profile so it never re-mounts on Profile re-render
-// This prevents the focus-loss bug when typing in address fields
 function AddressForm({ onSave, loading }) {
     const emptyForm = { fullName: '', mobile: '', pincode: '', addressLine: '', city: '', state: '' }
     const [form, setForm] = useState(emptyForm)
@@ -35,7 +33,7 @@ function AddressForm({ onSave, loading }) {
             <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[{ name: 'fullName', label: 'Full Name', placeholder: 'Enter full name' },
-                      { name: 'mobile', label: 'Mobile', placeholder: '10-digit number' }].map(f => (
+                    { name: 'mobile', label: 'Mobile', placeholder: '10-digit number' }].map(f => (
                         <div key={f.name}>
                             <label className="text-xs font-semibold text-gray-600 block mb-1">{f.label}</label>
                             <input name={f.name} value={form[f.name]} onChange={handleChange}
@@ -70,8 +68,7 @@ function AddressForm({ onSave, loading }) {
 }
 
 // ── PasswordField — module-level stable component ────────────────────────────
-// MUST be defined outside Profile and SecurityContent to prevent remount on re-render
-function PasswordField({ name, label, showKey, show, onToggleShow, value, onChange }) {
+function PasswordField({ name, label, show, onToggleShow, value, onChange }) {
     return (
         <div>
             <label className="text-xs font-semibold text-gray-600 block mb-1">{label}</label>
@@ -97,13 +94,11 @@ function PasswordField({ name, label, showKey, show, onToggleShow, value, onChan
 }
 
 // ── SecurityForm — module-level stable component ──────────────────────────────
-// Also outside Profile to prevent state loss on re-render
 function SecurityForm() {
     const [fields, setFields] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    const [show,   setShow]   = useState({ current: false, newP: false, confirm: false })
+    const [show, setShow] = useState({ current: false, newP: false, confirm: false })
     const [saving, setSaving] = useState(false)
 
-    // stable handleChange — no re-render dependency
     const handleChange = useCallback((e) => {
         const { name, value } = e.target
         setFields(prev => ({ ...prev, [name]: value }))
@@ -117,7 +112,7 @@ function SecurityForm() {
         try {
             await client.patch('User/change-password', {
                 currentPassword: fields.currentPassword,
-                newPassword:     fields.newPassword,
+                newPassword: fields.newPassword,
                 confirmPassword: fields.confirmPassword,
             })
             notify('Password changed successfully ✓', true)
@@ -140,19 +135,19 @@ function SecurityForm() {
                 <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
                     <PasswordField
                         name="currentPassword" label="Current Password"
-                        showKey="current" show={show.current}
+                        show={show.current}
                         onToggleShow={() => setShow(s => ({ ...s, current: !s.current }))}
                         value={fields.currentPassword} onChange={handleChange}
                     />
                     <PasswordField
                         name="newPassword" label="New Password (min 6 chars)"
-                        showKey="newP" show={show.newP}
+                        show={show.newP}
                         onToggleShow={() => setShow(s => ({ ...s, newP: !s.newP }))}
                         value={fields.newPassword} onChange={handleChange}
                     />
                     <PasswordField
                         name="confirmPassword" label="Confirm New Password"
-                        showKey="confirm" show={show.confirm}
+                        show={show.confirm}
                         onToggleShow={() => setShow(s => ({ ...s, confirm: !s.confirm }))}
                         value={fields.confirmPassword} onChange={handleChange}
                     />
@@ -171,27 +166,30 @@ function SecurityForm() {
         </div>
     )
 }
+
+// ✅ NAV_ITEMS — TOP LEVEL PAR (yahi bug tha - pehle missing tha)
+const NAV_ITEMS = [
     { id: 'dashboard', label: 'Dashboard', icon: FiGrid },
-    { id: 'orders',    label: 'My Orders', icon: FiPackage },
+    { id: 'orders', label: 'My Orders', icon: FiPackage },
     { id: 'addresses', label: 'Addresses', icon: FiMapPin },
-    { id: 'security',  label: 'Security',  icon: FiShield },
-    { id: 'settings',  label: 'Settings',  icon: FiSettings },
+    { id: 'security', label: 'Security', icon: FiShield },
+    { id: 'settings', label: 'Settings', icon: FiSettings },
 ]
 
 export default function Profile({ user }) {
     const router = useRouter()
 
-    const [activeTab,     setActiveTab]     = useState('dashboard')
-    const [addresses,     setAddresses]     = useState(user?.addresses || [])
-    const [showForm,      setShowForm]      = useState(false)
-    const [deleteIndex,   setDeleteIndex]   = useState(null)
+    const [activeTab, setActiveTab] = useState('dashboard')
+    const [addresses, setAddresses] = useState(user?.addresses || [])
+    const [showForm, setShowForm] = useState(false)
+    const [deleteIndex, setDeleteIndex] = useState(null)
     const [submitLoading, setSubmitLoading] = useState(false)
-    const [orderStats,    setOrderStats]    = useState({ totalOrders: 0, totalSpent: 0 })
-    const [statsLoading,  setStatsLoading]  = useState(true)
+    const [orderStats, setOrderStats] = useState({ totalOrders: 0, totalSpent: 0 })
+    const [statsLoading, setStatsLoading] = useState(true)
     const [notifications, setNotifications] = useState({
         emailNotifications: true,
-        orderUpdates:       true,
-        promotionalOffers:  false,
+        orderUpdates: true,
+        promotionalOffers: false,
     })
 
     const initial = user?.name?.charAt(0)?.toUpperCase() || 'U'
@@ -201,7 +199,7 @@ export default function Profile({ user }) {
             try {
                 const res = await client.get('order/stats')
                 if (res.data.success) setOrderStats(res.data.data)
-            } catch (_) {}
+            } catch (_) { }
             finally { setStatsLoading(false) }
         }
         fetchStats()
@@ -247,7 +245,7 @@ export default function Profile({ user }) {
                     </div>
                 </div>
 
-                {/* Desktop nav — vertical */}
+                {/* Desktop nav */}
                 <nav className="hidden lg:block p-2 space-y-0.5">
                     {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
                         <button key={id} onClick={() => setActiveTab(id)}
@@ -272,7 +270,7 @@ export default function Profile({ user }) {
                     ))}
                 </nav>
 
-                {/* Mobile/tablet nav — horizontal scrollable strip */}
+                {/* Mobile nav */}
                 <div className="lg:hidden flex overflow-x-auto scrollbar-hide border-t border-gray-100">
                     {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
                         <button key={id} onClick={() => setActiveTab(id)}
@@ -284,7 +282,7 @@ export default function Profile({ user }) {
                     ))}
                 </div>
 
-                {/* Member since — desktop only */}
+                {/* Member since */}
                 <div className="hidden lg:block mx-2 mb-2 px-3 py-2 bg-gray-50 rounded-xl border border-gray-100">
                     <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Member Since</p>
                     <p className="text-xs font-bold text-gray-700 mt-0.5">
@@ -346,15 +344,14 @@ export default function Profile({ user }) {
         </div>
     )
 
-    // ── Security — delegates to module-level SecurityForm ────────────────────
     const SecurityContent = () => <SecurityForm />
 
     // ── Settings ──────────────────────────────────────────────────────────────
     const SettingsContent = () => {
         const toggleItems = [
-            { key: 'emailNotifications', icon: FiMail,    label: 'Email Notifications', desc: 'Receive account and order emails' },
-            { key: 'orderUpdates',       icon: FiPackage, label: 'Order Updates',        desc: 'Get notified on order status changes' },
-            { key: 'promotionalOffers',  icon: FiBell,    label: 'Promotional Offers',   desc: 'Deals, discounts and new arrivals' },
+            { key: 'emailNotifications', icon: FiMail, label: 'Email Notifications', desc: 'Receive account and order emails' },
+            { key: 'orderUpdates', icon: FiPackage, label: 'Order Updates', desc: 'Get notified on order status changes' },
+            { key: 'promotionalOffers', icon: FiBell, label: 'Promotional Offers', desc: 'Deals, discounts and new arrivals' },
         ]
         return (
             <div className="space-y-4">
@@ -446,7 +443,7 @@ export default function Profile({ user }) {
         </div>
     )
 
-    // ── Orders Tab ────────────────────────────────────────────────────────────
+    // ── Orders ────────────────────────────────────────────────────────────────
     const OrderDetailModal = ({ orderId, imageBaseUrl: listBaseUrl, onClose }) => {
         const [order, setOrder] = useState(null)
         const [imgBase, setImgBase] = useState(listBaseUrl || '')
@@ -458,8 +455,8 @@ export default function Profile({ user }) {
                 setImgBase(res.data.meta?.imageBaseUrl || listBaseUrl || '')
             }).catch(err => setError(err?.response?.data?.msg || 'Failed to load')).finally(() => setLoading(false))
         }, [orderId])
-        const S = { placed:'bg-yellow-100 text-yellow-700', confirmed:'bg-blue-100 text-blue-700', shipped:'bg-purple-100 text-purple-700', out_for_delivery:'bg-indigo-100 text-indigo-700', delivered:'bg-green-100 text-green-700', cancelled:'bg-red-100 text-red-700' }
-        const P = { pending:'text-yellow-600', paid:'text-green-600', failed:'text-red-500', refund_pending:'text-orange-500', refunded:'text-teal-600' }
+        const S = { placed: 'bg-yellow-100 text-yellow-700', confirmed: 'bg-blue-100 text-blue-700', shipped: 'bg-purple-100 text-purple-700', out_for_delivery: 'bg-indigo-100 text-indigo-700', delivered: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700' }
+        const P = { pending: 'text-yellow-600', paid: 'text-green-600', failed: 'text-red-500', refund_pending: 'text-orange-500', refunded: 'text-teal-600' }
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -471,22 +468,22 @@ export default function Profile({ user }) {
                         <button onClick={onClose} className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition"><FiX size={15} /></button>
                     </div>
                     <div className="overflow-y-auto flex-1 p-4 sm:p-5 space-y-4">
-                        {loading && <div className="space-y-3 animate-pulse">{[40,28,70,70].map((h,i)=><div key={i} className="bg-gray-100 rounded-xl" style={{height:h}}/>)}</div>}
-                        {!loading && error && <div className="text-center py-8"><FiAlertTriangle size={26} className="text-red-400 mx-auto mb-2"/><p className="text-sm font-semibold text-red-600">{error}</p></div>}
+                        {loading && <div className="space-y-3 animate-pulse">{[40, 28, 70, 70].map((h, i) => <div key={i} className="bg-gray-100 rounded-xl" style={{ height: h }} />)}</div>}
+                        {!loading && error && <div className="text-center py-8"><FiAlertTriangle size={26} className="text-red-400 mx-auto mb-2" /><p className="text-sm font-semibold text-red-600">{error}</p></div>}
                         {!loading && order && (
                             <>
                                 <div className="flex items-center justify-between flex-wrap gap-2">
-                                    <span className={`text-xs font-bold px-3 py-1.5 rounded-full capitalize ${S[order.orderStatus]||'bg-gray-100 text-gray-600'}`}>{order.orderStatus.replace(/_/g,' ')}</span>
-                                    <div className="text-right"><p className="text-[10px] text-gray-400 font-semibold uppercase">Order Date</p><p className="text-xs font-semibold text-gray-700">{new Date(order.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</p></div>
+                                    <span className={`text-xs font-bold px-3 py-1.5 rounded-full capitalize ${S[order.orderStatus] || 'bg-gray-100 text-gray-600'}`}>{order.orderStatus.replace(/_/g, ' ')}</span>
+                                    <div className="text-right"><p className="text-[10px] text-gray-400 font-semibold uppercase">Order Date</p><p className="text-xs font-semibold text-gray-700">{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
                                 </div>
                                 <div className="space-y-2">
-                                    {order.items.map((item,i)=>(
+                                    {order.items.map((item, i) => (
                                         <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100">
                                             <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
-                                                {item.product_id?.thumbnail ? <img src={imgBase+item.product_id.thumbnail} alt="" className="w-full h-full object-contain p-1"/> : <FiPackage size={13} className="text-gray-300"/>}
+                                                {item.product_id?.thumbnail ? <img src={imgBase + item.product_id.thumbnail} alt="" className="w-full h-full object-contain p-1" /> : <FiPackage size={13} className="text-gray-300" />}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-semibold text-gray-800 truncate">{item.product_id?.name||'Product'}</p>
+                                                <p className="text-sm font-semibold text-gray-800 truncate">{item.product_id?.name || 'Product'}</p>
                                                 <p className="text-xs text-gray-400">₹{item.price?.toLocaleString('en-IN')} × {item.qty}</p>
                                             </div>
                                             <span className="text-sm font-black text-gray-800 shrink-0">₹{item.total?.toLocaleString('en-IN')}</span>
@@ -499,15 +496,15 @@ export default function Profile({ user }) {
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="bg-white border border-gray-100 rounded-xl p-3 space-y-1.5">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wide flex items-center gap-1"><FiCreditCard size={9}/> Payment</p>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wide flex items-center gap-1"><FiCreditCard size={9} /> Payment</p>
                                         <div className="flex justify-between text-xs"><span className="text-gray-500">Method</span><span className="font-bold text-gray-800 uppercase">{order.paymentMethod}</span></div>
-                                        <div className="flex justify-between text-xs"><span className="text-gray-500">Status</span><span className={`font-bold capitalize ${P[order.paymentStatus]||'text-gray-600'}`}>{order.paymentStatus==='refund_pending'?'Refund Pending':order.paymentStatus}</span></div>
+                                        <div className="flex justify-between text-xs"><span className="text-gray-500">Status</span><span className={`font-bold capitalize ${P[order.paymentStatus] || 'text-gray-600'}`}>{order.paymentStatus === 'refund_pending' ? 'Refund Pending' : order.paymentStatus}</span></div>
                                     </div>
                                     <div className="bg-white border border-gray-100 rounded-xl p-3">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wide flex items-center gap-1 mb-1.5"><FiMapPin size={9}/> Address</p>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wide flex items-center gap-1 mb-1.5"><FiMapPin size={9} /> Address</p>
                                         <p className="font-bold text-gray-800 text-xs">{order.shippingAddress?.fullName}</p>
                                         <p className="text-[11px] text-gray-500 mt-0.5">{order.shippingAddress?.city}, {order.shippingAddress?.state} — {order.shippingAddress?.pincode}</p>
-                                        <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1"><FiPhone size={9}/> {order.shippingAddress?.mobile}</p>
+                                        <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1"><FiPhone size={9} /> {order.shippingAddress?.mobile}</p>
                                     </div>
                                 </div>
                             </>
@@ -519,17 +516,17 @@ export default function Profile({ user }) {
     }
 
     const OrdersContent = () => {
-        const [orders,       setOrders]       = useState([])
+        const [orders, setOrders] = useState([])
         const [imageBaseUrl, setImageBaseUrl] = useState('')
-        const [ordLoading,   setOrdLoading]   = useState(true)
-        const [ordError,     setOrdError]     = useState(null)
-        const [selectedId,   setSelectedId]   = useState(null)
-        const [cancelId,     setCancelId]     = useState(null)
-        const [cancelling,   setCancelling]   = useState(false)
+        const [ordLoading, setOrdLoading] = useState(true)
+        const [ordError, setOrdError] = useState(null)
+        const [selectedId, setSelectedId] = useState(null)
+        const [cancelId, setCancelId] = useState(null)
+        const [cancelling, setCancelling] = useState(false)
         const loadOrders = async () => {
             setOrdLoading(true); setOrdError(null)
-            try { const res = await client.get('order/my-orders'); setOrders(res.data.data||[]); setImageBaseUrl(res.data.meta?.imageBaseUrl||'') }
-            catch (err) { setOrdError(err?.response?.data?.msg||'Failed to load orders.') }
+            try { const res = await client.get('order/my-orders'); setOrders(res.data.data || []); setImageBaseUrl(res.data.meta?.imageBaseUrl || '') }
+            catch (err) { setOrdError(err?.response?.data?.msg || 'Failed to load orders.') }
             finally { setOrdLoading(false) }
         }
         useEffect(() => { loadOrders() }, [])
@@ -537,25 +534,25 @@ export default function Profile({ user }) {
             if (!cancelId) return; setCancelling(true)
             try {
                 const res = await client.patch(`order/cancel/${cancelId}`)
-                if (res.data.success) { setOrders(prev=>prev.map(o=>o._id===cancelId?{...o,orderStatus:res.data.data.orderStatus,paymentStatus:res.data.data.paymentStatus}:o)); notify('Order cancelled',true) }
-                else notify(res.data.msg||'Could not cancel',false)
-            } catch (err) { notify(err?.response?.data?.msg||'Cancel failed',false) }
+                if (res.data.success) { setOrders(prev => prev.map(o => o._id === cancelId ? { ...o, orderStatus: res.data.data.orderStatus, paymentStatus: res.data.data.paymentStatus } : o)); notify('Order cancelled', true) }
+                else notify(res.data.msg || 'Could not cancel', false)
+            } catch (err) { notify(err?.response?.data?.msg || 'Cancel failed', false) }
             finally { setCancelling(false); setCancelId(null) }
         }
-        const SC = { placed:'bg-yellow-100 text-yellow-700', confirmed:'bg-blue-100 text-blue-700', shipped:'bg-purple-100 text-purple-700', out_for_delivery:'bg-indigo-100 text-indigo-700', delivered:'bg-green-100 text-green-700', cancelled:'bg-red-100 text-red-700' }
+        const SC = { placed: 'bg-yellow-100 text-yellow-700', confirmed: 'bg-blue-100 text-blue-700', shipped: 'bg-purple-100 text-purple-700', out_for_delivery: 'bg-indigo-100 text-indigo-700', delivered: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700' }
         return (
             <>
-                {selectedId && <OrderDetailModal orderId={selectedId} imageBaseUrl={imageBaseUrl} onClose={()=>setSelectedId(null)} />}
+                {selectedId && <OrderDetailModal orderId={selectedId} imageBaseUrl={imageBaseUrl} onClose={() => setSelectedId(null)} />}
                 {cancelId && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={()=>!cancelling&&setCancelId(null)}>
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5" onClick={e=>e.stopPropagation()}>
-                            <div className="w-11 h-11 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-3"><FiAlertTriangle size={20} className="text-red-500"/></div>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => !cancelling && setCancelId(null)}>
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+                            <div className="w-11 h-11 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-3"><FiAlertTriangle size={20} className="text-red-500" /></div>
                             <h3 className="text-base font-black text-gray-900 text-center mb-1">Cancel Order?</h3>
                             <p className="text-sm text-gray-500 text-center mb-4">This <span className="font-semibold text-gray-700">cannot be undone</span>.</p>
                             <div className="flex gap-2.5">
-                                <button onClick={()=>setCancelId(null)} disabled={cancelling} className="flex-1 border border-gray-200 text-gray-600 font-bold py-2.5 rounded-xl hover:bg-gray-50 transition text-sm disabled:opacity-50">Keep</button>
+                                <button onClick={() => setCancelId(null)} disabled={cancelling} className="flex-1 border border-gray-200 text-gray-600 font-bold py-2.5 rounded-xl hover:bg-gray-50 transition text-sm disabled:opacity-50">Keep</button>
                                 <button onClick={handleCancelConfirm} disabled={cancelling} className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl transition text-sm disabled:opacity-60 flex items-center justify-center gap-2">
-                                    {cancelling?<><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Cancelling…</>:'Yes, Cancel'}
+                                    {cancelling ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Cancelling…</> : 'Yes, Cancel'}
                                 </button>
                             </div>
                         </div>
@@ -565,48 +562,48 @@ export default function Profile({ user }) {
                     <div className="flex items-center justify-between">
                         <h2 className="text-lg sm:text-xl font-black text-gray-900">My Orders</h2>
                         <button onClick={loadOrders} disabled={ordLoading} className="flex items-center gap-1.5 text-xs text-teal-600 font-bold hover:underline disabled:opacity-50">
-                            <FiRefreshCw size={11} className={ordLoading?'animate-spin':''}/> Refresh
+                            <FiRefreshCw size={11} className={ordLoading ? 'animate-spin' : ''} /> Refresh
                         </button>
                     </div>
-                    {ordLoading && <div className="space-y-3">{[1,2].map(i=><div key={i} className="bg-gray-50 rounded-2xl animate-pulse h-20"/>)}</div>}
-                    {!ordLoading && ordError && <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center"><FiAlertTriangle size={20} className="text-red-400 mx-auto mb-1"/><p className="text-red-600 text-sm font-semibold">{ordError}</p></div>}
-                    {!ordLoading && !ordError && orders.length===0 && (
+                    {ordLoading && <div className="space-y-3">{[1, 2].map(i => <div key={i} className="bg-gray-50 rounded-2xl animate-pulse h-20" />)}</div>}
+                    {!ordLoading && ordError && <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center"><FiAlertTriangle size={20} className="text-red-400 mx-auto mb-1" /><p className="text-red-600 text-sm font-semibold">{ordError}</p></div>}
+                    {!ordLoading && !ordError && orders.length === 0 && (
                         <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-2xl">
-                            <FiPackage size={28} className="text-gray-300 mx-auto mb-2"/>
+                            <FiPackage size={28} className="text-gray-300 mx-auto mb-2" />
                             <p className="text-gray-600 font-semibold text-sm">No orders yet</p>
                             <Link href="/store" className="mt-2 inline-block text-sm text-teal-600 font-bold hover:underline">Start Shopping →</Link>
                         </div>
                     )}
-                    {!ordLoading && orders.map(order=>(
+                    {!ordLoading && orders.map(order => (
                         <div key={order._id} className="bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-sm transition">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3.5 sm:px-4 py-3 bg-gray-50/70 border-b border-gray-100">
                                 <div className="flex items-center gap-3 flex-wrap">
                                     <div><p className="text-[9px] text-gray-400 font-bold uppercase">Order ID</p><p className="text-xs font-black text-gray-700 font-mono">#{order._id.slice(-8).toUpperCase()}</p></div>
-                                    <div><p className="text-[9px] text-gray-400 font-bold uppercase">Date</p><p className="text-xs font-semibold text-gray-700">{new Date(order.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</p></div>
+                                    <div><p className="text-[9px] text-gray-400 font-bold uppercase">Date</p><p className="text-xs font-semibold text-gray-700">{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p></div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${SC[order.orderStatus]||'bg-gray-100 text-gray-600'}`}>{order.orderStatus.replace(/_/g,' ')}</span>
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${SC[order.orderStatus] || 'bg-gray-100 text-gray-600'}`}>{order.orderStatus.replace(/_/g, ' ')}</span>
                                     <span className="text-sm font-black text-gray-900">₹{order.totalAmount?.toLocaleString('en-IN')}</span>
                                 </div>
                             </div>
                             <div className="px-3.5 sm:px-4 py-2.5 flex gap-2 flex-wrap">
-                                {order.items.slice(0,3).map((item,i)=>(
+                                {order.items.slice(0, 3).map((item, i) => (
                                     <div key={i} className="flex items-center gap-1.5 bg-gray-50 rounded-xl px-2 py-1.5 border border-gray-100 text-xs">
                                         <div className="w-6 h-6 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
-                                            {item.product_id?.thumbnail?<img src={imageBaseUrl+item.product_id.thumbnail} alt="" className="w-full h-full object-contain"/>:<FiPackage size={10} className="text-gray-300"/>}
+                                            {item.product_id?.thumbnail ? <img src={imageBaseUrl + item.product_id.thumbnail} alt="" className="w-full h-full object-contain" /> : <FiPackage size={10} className="text-gray-300" />}
                                         </div>
-                                        <span className="font-semibold text-gray-800 max-w-[70px] truncate">{item.product_id?.name||'Product'}</span>
+                                        <span className="font-semibold text-gray-800 max-w-[70px] truncate">{item.product_id?.name || 'Product'}</span>
                                     </div>
                                 ))}
-                                {order.items.length>3 && <div className="flex items-center bg-gray-50 rounded-xl px-2 py-1.5 border border-gray-100"><span className="text-xs text-gray-500 font-semibold">+{order.items.length-3}</span></div>}
+                                {order.items.length > 3 && <div className="flex items-center bg-gray-50 rounded-xl px-2 py-1.5 border border-gray-100"><span className="text-xs text-gray-500 font-semibold">+{order.items.length - 3}</span></div>}
                             </div>
                             <div className="px-3.5 sm:px-4 pb-3 flex items-center gap-3">
-                                <button onClick={()=>setSelectedId(order._id)} className="flex items-center gap-1.5 text-xs font-bold text-teal-600 hover:text-teal-800 transition">
-                                    <FiEye size={11}/> View
+                                <button onClick={() => setSelectedId(order._id)} className="flex items-center gap-1.5 text-xs font-bold text-teal-600 hover:text-teal-800 transition">
+                                    <FiEye size={11} /> View
                                 </button>
-                                {order.orderStatus==='placed' && (
-                                    <button onClick={()=>setCancelId(order._id)} className="ml-auto flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg border border-red-100 transition">
-                                        <FiX size={10}/> Cancel
+                                {order.orderStatus === 'placed' && (
+                                    <button onClick={() => setCancelId(order._id)} className="ml-auto flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg border border-red-100 transition">
+                                        <FiX size={10} /> Cancel
                                     </button>
                                 )}
                             </div>
@@ -619,19 +616,19 @@ export default function Profile({ user }) {
 
     const renderContent = () => {
         switch (activeTab) {
-            case 'dashboard':  return <DashboardContent />
-            case 'orders':     return <OrdersContent />
-            case 'addresses':  return <AddressesContent />
-            case 'security':   return <SecurityContent />
-            case 'settings':   return <SettingsContent />
-            default:           return <DashboardContent />
+            case 'dashboard': return <DashboardContent />
+            case 'orders': return <OrdersContent />
+            case 'addresses': return <AddressesContent />
+            case 'security': return <SecurityContent />
+            case 'settings': return <SettingsContent />
+            default: return <DashboardContent />
         }
     }
 
     return (
         <div className="min-h-screen bg-gray-50 -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6">
 
-            {/* Hero — pb provides space for the card below, no overlap */}
+            {/* ✅ Hero - clean pb, no negative margin needed */}
             <div className="bg-gradient-to-r from-[#01A49E] via-teal-500 to-emerald-500 pt-6 sm:pt-8 pb-6 px-4 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
                 <div className="max-w-5xl mx-auto relative">
@@ -640,7 +637,7 @@ export default function Profile({ user }) {
                 </div>
             </div>
 
-            {/* Main layout — positive margin, no overlap with hero */}
+            {/* ✅ Main layout - positive margin, no overlap */}
             <div className="container-app mt-4 sm:mt-6 pb-12 sm:pb-16">
                 <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 items-start">
                     <Sidebar />
