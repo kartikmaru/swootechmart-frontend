@@ -628,8 +628,8 @@ export default function Profile({ user }) {
     return (
         <div className="min-h-screen bg-gray-50 -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6">
 
-            {/* ✅ Hero - clean pb, no negative margin needed */}
-            <div className="bg-gradient-to-r from-[#01A49E] via-teal-500 to-emerald-500 pt-6 sm:pt-8 pb-6 px-4 relative overflow-hidden">
+            {/* Hero */}
+            <div className="bg-gradient-to-r from-[#01A49E] via-teal-500 to-emerald-500 pt-6 sm:pt-8 pb-20 sm:pb-24 px-4 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
                 <div className="max-w-5xl mx-auto relative">
                     <p className="text-teal-100 text-xs font-semibold mb-1 uppercase tracking-widest">My Account</p>
@@ -637,7 +637,7 @@ export default function Profile({ user }) {
                 </div>
             </div>
 
-            {/* ✅ Main layout - positive margin, no overlap */}
+            {/* Main layout */}
             <div className="container-app mt-4 sm:mt-6 pb-12 sm:pb-16">
                 <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 items-start">
                     <Sidebar />
