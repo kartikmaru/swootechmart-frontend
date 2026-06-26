@@ -1,22 +1,30 @@
 'use client'
-// AdminGuard — protects all admin panel pages
-// Runs on client after mount: fetches current user, checks admin/superAdmin role
-// If not authorized → redirects to /login
-// This is a client-side guard that complements the proxy.js route protection
+// AdminGuard — protects all admin panel pages and provides user context
+// Fetches the authenticated admin user once on mount, validates role,
+// then shares the user via AdminUserContext so Header and other
+// components can display real user data without duplicate API calls.
 
-import { useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { client } from '@/utils/Helper'
 
+// ── Context — admin user shared across layout ─────────────────────────────────
+const AdminUserContext = createContext(null)
+
+export function useAdminUser() {
+    return useContext(AdminUserContext)
+}
+
 export default function AdminGuard({ children }) {
-    const router = useRouter()
-    const [checking, setChecking] = useState(true)
+    const router   = useRouter()
+    const [checking,   setChecking]   = useState(true)
     const [authorized, setAuthorized] = useState(false)
+    const [adminUser,  setAdminUser]  = useState(null)
 
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const res = await client.get('User/get')
+                const res  = await client.get('User/get')
                 const user = res.data?.user
 
                 if (!user) {
@@ -26,16 +34,15 @@ export default function AdminGuard({ children }) {
 
                 const allowedRoles = ['admin', 'superAdmin']
                 if (!allowedRoles.includes(user.role)) {
-                    // Logged in but wrong role — clear token and redirect
                     localStorage.removeItem('token')
                     document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax'
                     router.replace('/login?error=unauthorized')
                     return
                 }
 
+                setAdminUser(user)
                 setAuthorized(true)
-            } catch (err) {
-                // Not authenticated
+            } catch (_) {
                 router.replace('/login?redirect=/admin')
             } finally {
                 setChecking(false)
@@ -58,5 +65,9 @@ export default function AdminGuard({ children }) {
 
     if (!authorized) return null
 
-    return <>{children}</>
+    return (
+        <AdminUserContext.Provider value={adminUser}>
+            {children}
+        </AdminUserContext.Provider>
+    )
 }
