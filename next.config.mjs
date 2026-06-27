@@ -22,6 +22,12 @@ const nextConfig = {
                 hostname: 'images.unsplash.com',
                 pathname: '/**',
             },
+            // Cloudinary — product images permanent cloud storage
+            {
+                protocol: 'https',
+                hostname: 'res.cloudinary.com',
+                pathname: '/**',
+            },
         ],
     },
 };
