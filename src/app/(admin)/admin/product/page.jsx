@@ -10,9 +10,11 @@ export const dynamic = 'force-dynamic';
 
 export default async function ProductTable() {
 
-    const res = await getProducts()
-    const data = res.data
-    const meta = res.meta
+    // Admin needs ALL products — no status filter, no limit
+    // Pass limit=1000 to get all products (admin should see everything)
+    const res = await getProducts({ limit: 1000 })
+    const data = res?.data || []
+    const meta = res?.meta || {}
 
     return (
 
@@ -68,7 +70,7 @@ export default async function ProductTable() {
                                     <td className="p-4">
                                         <div className="flex items-center">
                                             <img
-                                                src={meta.imageBaseUrl + product.thumbnail || "/no-image.png"}
+                                                src={product.thumbnail || "/no-image.png"}
                                                 alt={product.name}
                                                 className="w-10 h-10 object-cover rounded-lg border border-gray-200 bg-white p-1"
                                             />
