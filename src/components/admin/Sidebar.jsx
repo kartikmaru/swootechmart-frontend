@@ -58,7 +58,7 @@ export default function Sidebar() {
         <div className={`${open ? "w-64" : "w-20"} min-h-screen h-full shadow-xl sticky top-0 duration-200 p-4 pl-5 bg-white shrink-0`}>
             <h1 className={`${open ? "justify-between" : "justify-center mt-2"} flex items-center text-xl font-bold`}>
                 {open && (
-                    <span className="text-orange-400">Ishop <span className="text-black">Admin</span></span>
+                    <span className="text-orange-400">Swoo <span className="text-black">Tech Mart</span></span>
                 )}
                 <button className="cursor-pointer" onClick={() => Setopen(!open)}>
                     {open ? <FaBarsStaggered /> : <FaBars />}

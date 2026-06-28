@@ -28,6 +28,27 @@ export default function Checkout({ user }) {
         if (!user) router.replace('/login?redirect=/checkout');
     }, [user, router]);
 
+    // Silently sync Redux cart to DB when checkout page loads.
+    // This ensures backend has the latest cart even if user added items
+    // from a different device or before logging in.
+    useEffect(() => {
+        if (!user || isEmpty) return;
+        const syncCart = async () => {
+            try {
+                const localCartItems = cart.items.map(i => ({ id: i.id, qty: i.qty }));
+                await client.post('cart/sync', {
+                    localCart: JSON.stringify({ items: localCartItems }),
+                });
+                console.log('[Checkout] Cart synced to DB successfully');
+            } catch (err) {
+                // Sync failure is non-fatal — backend will return 400 "cart empty" if this fails
+                console.warn('[Checkout] Cart pre-sync failed (non-fatal):', err?.response?.data?.message || err.message);
+            }
+        };
+        syncCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user]); // Only run on user change — not on every cart update
+
     const handleOrder = async () => {
         if (!user) {
             notify('Please login to place an order', false);
@@ -46,16 +67,18 @@ export default function Checkout({ user }) {
 
         setLoading(true);
 
+        // NOTE: Backend fetches cart from DB directly (secure — never trust frontend totals).
+        // We only send address and paymentMethod. Backend validates everything else.
         const orderData = {
             address:       addresses[seladdress],
             paymentMethod,
         };
 
-        // Debug log — check what is being sent
         console.log('[Checkout] Sending order:', {
-            url:    `${process.env.NEXT_PUBLIC_API_BASE_URL}order/place`,
-            method: 'POST',
-            data:   orderData,
+            url:           `${process.env.NEXT_PUBLIC_API_BASE_URL}order/place`,
+            method:        'POST',
+            paymentMethod,
+            addressFields: Object.keys(addresses[seladdress] || {}),
         });
 
         try {
@@ -158,7 +181,13 @@ export default function Checkout({ user }) {
                 msg = 'Your session has expired. Please login again.';
                 router.push('/login?redirect=/checkout');
             } else if (error?.response?.status === 400) {
-                msg = error?.response?.data?.message || error?.response?.data?.msg || 'Invalid order data.';
+                const serverMsg = error?.response?.data?.message || error?.response?.data?.msg || '';
+                if (serverMsg.toLowerCase().includes('cart')) {
+                    // Cart not synced to DB — this can happen if user added items offline
+                    msg = 'Your cart could not be loaded. Please go back to cart and try again.';
+                } else {
+                    msg = serverMsg || 'Invalid order data. Please check your address.';
+                }
             } else if (error?.response?.status >= 500) {
                 msg = 'Server error. Please try again in a moment.';
             } else {
