@@ -117,32 +117,45 @@ export default function ProductDetailClient({ product, imageBaseUrl, thumbBaseUr
             </nav>
 
             {/* ── Main Product Section ─────────────────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_320px] gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[440px_1fr_320px] gap-8 items-start">
 
                 {/* ── Left: Image Gallery ─────────────────────────────────── */}
-                <div className="flex flex-col-reverse sm:flex-row gap-3 w-full lg:w-auto shrink-0">
+                {/* Fixed 440px column on lg so the main image never squishes the center info */}
+                <div className="flex flex-col-reverse sm:flex-row gap-3 w-full">
 
-                    {/* Thumbnail strip (horizontal on mobile, vertical on sm+) */}
-                    <div className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0 w-full sm:w-16 shrink-0">
+                    {/* Thumbnail strip — horizontal scroll on mobile, vertical on sm+ */}
+                    <div className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-y-auto sm:overflow-x-hidden
+                                    pb-2 sm:pb-0 shrink-0
+                                    sm:max-h-[400px] sm:w-[60px]
+                                    scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
                         {allImages.map((img, i) => (
                             <button
                                 key={i}
                                 onClick={() => setSelectedImg(i)}
-                                // 🧠 onClick → setSelectedImg(i) → selectedImg = i
-                                // → neeche main image me allImages[selectedImg] dikhega
                                 className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all duration-200 shrink-0
                                     ${selectedImg === i
                                         ? 'border-[#01A49E] shadow-md scale-105'
                                         : 'border-gray-200 hover:border-[#01A49E]/50 opacity-70 hover:opacity-100'}`}
                             >
-                                <img src={img.src} alt={img.label} className="w-full h-full object-contain p-1 bg-gray-50" />
+                                {/* object-contain ensures thumbnails never stretch */}
+                                <img
+                                    src={img.src}
+                                    alt={img.label}
+                                    className="w-full h-full object-contain p-1 bg-gray-50"
+                                />
                             </button>
                         ))}
                     </div>
 
-                    {/* Main image box */}
-                    {/* key={selectedImg} → image change hone pe smooth re-render */}
-                    <div className="w-full max-w-[400px] aspect-square bg-gray-50 rounded-2xl border border-gray-200 flex items-center justify-center overflow-hidden relative mx-auto sm:mx-0">
+                    {/* Main image box
+                        ─ aspect-square   : always a perfect square regardless of image shape
+                        ─ w-full          : fills available column width responsively
+                        ─ overflow-hidden : clips nothing but prevents layout bleed
+                        ─ object-contain  : entire product visible, no stretch/crop
+                        ─ p-4             : breathing room so product doesn't touch edges  */}
+                    <div className="relative w-full aspect-square
+                                    bg-white rounded-2xl border border-gray-200
+                                    overflow-hidden shadow-sm">
                         {product.discount > 0 && (
                             <span className="absolute top-3 left-3 bg-[#01A49E] text-white text-xs font-black px-2.5 py-1 rounded-full z-10">
                                 -{product.discount}% OFF
@@ -152,7 +165,8 @@ export default function ProductDetailClient({ product, imageBaseUrl, thumbBaseUr
                             key={selectedImg}
                             src={allImages[selectedImg]?.src}
                             alt={product.name}
-                            className="w-full h-full object-contain p-6 transition-opacity duration-300"
+                            className="absolute inset-0 w-full h-full object-contain p-5
+                                       transition-opacity duration-300"
                         />
                     </div>
                 </div>
