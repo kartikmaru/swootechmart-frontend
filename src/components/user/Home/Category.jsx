@@ -1,10 +1,27 @@
-import { getCategories } from "@/API/helpAPI";
+import { getCategories, getProducts } from "@/API/helpAPI";
 import Link from "next/link";
 
 export default async function CategorySidebar() {
 
-    const CategoryResponse = await getCategories({ limit: 8, is_home: true, status: true })
-    const { data, meta } = CategoryResponse;
+    const [CategoryResponse, productRes] = await Promise.all([
+        getCategories({ limit: 8, is_home: true, status: true }),
+        getProducts({ limit: 1000 }),
+    ])
+    const { meta } = CategoryResponse;
+
+    // Build categoryId → count map in O(n)
+    const products = productRes?.data ?? []
+    const countMap = products.reduce((acc, product) => {
+        const catId = product?.category_Id?._id?.toString()
+        if (catId) acc[catId] = (acc[catId] ?? 0) + 1
+        return acc
+    }, {})
+
+    // Inject count into each category — keeps original object shape intact
+    const data = (CategoryResponse.data ?? []).map(cat => ({
+        ...cat._doc ?? cat,
+        count: countMap[cat._id?.toString()] ?? 0,
+    }))
 
     return (
         <div className="w-full max-w-[220px] shrink-0 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
